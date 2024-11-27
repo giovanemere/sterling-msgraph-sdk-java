@@ -5,19 +5,19 @@ pipeline {
         jdk 'java_temurin_17_0_12'
     }
     stages {
-        stage ('Initialize') {
-            steps {
-                sh 'mvn -version'
-            }
-        }
-
         stage ('Build') {
             steps {
+                sh 'mvn -version'
                 sh 'mvn -Dmaven.test.failure.ignore=true install' 
             }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
             post {
-                success {
-                    junit 'target/surefire-reports/**/*.xml' 
+                always {
+                    junit 'target/surefire-reports/*.xml'
                 }
             }
         }
