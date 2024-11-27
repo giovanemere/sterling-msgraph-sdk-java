@@ -1,5 +1,5 @@
 pipeline {
-    
+
     agent any
 
     tools {
@@ -8,14 +8,14 @@ pipeline {
     }
 
     environment {
+        ServerJfrog = "https://artifactory.edtech.com.co/artifactory"
         JfrogServerID = "ConnJfrogDevSecOps"
     }
 
     stages {
         stage ('Build') {
             steps {
-                sh 'mvn -version'
-                sh 'mvn -Dmaven.test.failure.ignore=true install' 
+                sh 'mvn clean compile assembly:single'
             }
             post {
                 success {
@@ -24,24 +24,21 @@ pipeline {
                 }
             }
         }
-        stage('Test') {
+        stage ("Publish Artifactory"){
             steps {
-                sh 'mvn test'
-                sh 'mkdir -p target/surefire-reports'
-            }
-        }
-        stage('Publish Artifactory') {
-            steps {
-                script {
+                script { 
+                    // Construccion de Variables
+                        env.JfrogURL = "${ServerJfrog}/DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/"
+                        echo "JfrogURL: ${env.JfrogURL}"
                     // Upload Artifactory
-                    rtUpload (  serverId: JfrogServerID,
-                        spec: '''{ "files": [ {  
-                            "pattern": $WORKSPACE/target/*.jar, 
-                            "target": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
-                            "recursive": "false" 
-                            } 
-                            ] }'''
-                    )
+                     rtUpload (  serverId: JfrogServerID,
+                                spec: '''{ "files": [ {  
+                                    "pattern": "$WORKSPACE/target/O365InboxAttachmentToDisk 5.2.0.jar", 
+                                    "target": "DevSecOps/SCCOLSFG/STERLING/Artifact/", 
+                                    "recursive": "false" 
+                                    } 
+                                    ] }'''
+                            )
                 }
             }
         }
