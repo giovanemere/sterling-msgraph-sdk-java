@@ -1,12 +1,16 @@
 pipeline {
+    
     agent any
+
     tools {
         maven 'maven_jenkins'
         jdk 'java_temurin_17_0_12'
     }
+
     environment {
-        env.JfrogServerID="ConnJfrogDevSecOps"
+        JfrogServerID = "ConnJfrogDevSecOps"
     }
+
     stages {
         stage ('Build') {
             steps {
