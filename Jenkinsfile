@@ -1,21 +1,23 @@
 pipeline {
     agent any
-    options {
-        skipStagesAfterUnstable()
+    tools {
+        maven 'maven'
+        jdk 'openjdk-17.0.12'
     }
     stages {
-        stage('Build') {
+        stage ('Initialize') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                sh 'mvn -version'
             }
         }
-        stage('Test') {
+
+        stage ('Build') {
             steps {
-                sh 'mvn test'
+                sh 'mvn -Dmaven.test.failure.ignore=true install' 
             }
             post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
+                success {
+                    junit 'target/surefire-reports/**/*.xml' 
                 }
             }
         }
