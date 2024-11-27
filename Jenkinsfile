@@ -16,6 +16,7 @@ pipeline {
         stage ('Build') {
             steps {
                 sh 'mvn -version'
+                sh 'mvn clean verify' 
                 sh 'mvn clean package' 
             }
             post {
@@ -23,12 +24,6 @@ pipeline {
                     // we only worry about archiving the jar file if the build steps are successful
                     archiveArtifacts(artifacts: '**/target/*.jar', allowEmptyArchive: true)
                 }
-            }
-        }
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-                sh 'mkdir -p target/surefire-reports'
             }
         }
         stage ("Publish Artifactory"){
