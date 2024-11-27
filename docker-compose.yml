@@ -1,0 +1,38 @@
+docker-compose.yml
+
+version: "3.4"
+services:
+  jenkins-devops:
+    image: jenkins/jenkins:2.466-update 
+    restart: always
+    user: root
+    ports:
+      - 8091:8080
+      - 8491:8443
+      - 50000:50000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "./jenkins_home:/var/jenkins_home"
+      - "./keystore.jks:/etc/keystore.jks"
+      - "./jdk-17.0.12_7:/var/jenkins_home/tools/hudson.model.JDK/java_temurin_17_0_12/"
+    extra_hosts:
+      - "artifactory.edtech.com.co:192.168.137.182"
+      - "sonarqube.edtech.com.co:192.168.137.180"
+    environment:
+      - JENKINS_OPTS=--httpPort=8080 --httpsPort=8443 --httpsKeyStore=/etc/keystore.jks --httpsKeyStorePassword=changeit
+      - JAVA_OPTS=-Djavax.net.ssl.trustStore=/usr/local/openjdk-8/jre/lib/security/cacerts
+      - SONAR_SCANNER_OPTS=-Xmx1024m
+      - TZ=America/Bogota
+    privileged: true
+
+
+
+# Instalar Java temurin en docker
+
+cd /home/giovanemere/Aprovisionamiento_Linux/compose/Jenkins/jenkins_docker
+docker-compose -f docker-compose.yml up -d
+docker exec -it -u 0 jenkins_docker_jenkins-devops_1 bash
+ls -ltr /var/jenkins_home/tools/hudson.model.JDK/java_temurin_17_0_12/bin/java
+
+
+# Maven
