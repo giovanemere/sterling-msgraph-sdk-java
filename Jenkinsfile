@@ -32,7 +32,6 @@ pipeline {
             }
         }
         stage ("Publish Artifactory"){
-            when { expression { "${disableJfrog}" == '1' } }
             steps {
                 script { 
                     // Construccion de Variables
