@@ -1,8 +1,8 @@
 pipeline {
     agent any
     tools {
-        maven 'maven'
-        jdk 'openjdk-17.0.12'
+        maven 'maven_jenkins'
+        jdk 'java_temurin_17_0_12'
     }
     stages {
         stage ('Initialize') {
