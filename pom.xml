@@ -6,7 +6,7 @@
 
     <groupId>co.com.edtech</groupId>
     <artifactId>O365InboxAttachmentToDisk</artifactId>
-    <version>5.2.0-beta</version>
+    <version>5.2.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
