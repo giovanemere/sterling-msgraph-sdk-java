@@ -4,6 +4,9 @@ pipeline {
         maven 'maven_jenkins'
         jdk 'java_temurin_17_0_12'
     }
+    environment {
+        env.JfrogServerID="ConnJfrogDevSecOps"
+    }
     stages {
         stage ('Build') {
             steps {
@@ -27,7 +30,7 @@ pipeline {
             steps {
                 script {
                     // Upload Artifactory
-                    rtUpload (  serverId: ConnJfrogDevSecOps,
+                    rtUpload (  serverId: JfrogServerID,
                         spec: '''{ "files": [ {  
                             "pattern": $WORKSPACE/target/*.jar, 
                             "target": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
