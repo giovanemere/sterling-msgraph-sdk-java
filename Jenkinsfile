@@ -8,6 +8,7 @@ pipeline {
     }
 
     environment {
+        ServerJfrog = "https://artifactory.edtech.com.co/artifactory"
         JfrogServerID = "ConnJfrogDevSecOps"
     }
 
@@ -33,11 +34,13 @@ pipeline {
         stage('Publish Artifactory') {
             steps {
                 script {
+                    env.JfrogURL = "${ServerJfrog}/DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/"
+                    echo "JfrogURL: ${env.JfrogURL}"
                     // Upload Artifactory
                     rtUpload (  serverId: JfrogServerID,
                         spec: '''{ "files": [ {  
-                            "pattern": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
-                            "target": $WORKSPACE/target/O365InboxAttachmentToDisk 5.2.0.jar, 
+                            "pattern": $WORKSPACE/target/O365InboxAttachmentToDisk 5.2.0.jar, 
+                            "target": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
                             "recursive": "false" 
                             } 
                             ] }'''
