@@ -36,8 +36,8 @@ pipeline {
                     // Upload Artifactory
                     rtUpload (  serverId: JfrogServerID,
                         spec: '''{ "files": [ {  
-                            "pattern": $WORKSPACE/target/O365InboxAttachmentToDisk 5.2.0.jar, 
-                            "target": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
+                            "pattern": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
+                            "target": $WORKSPACE/target/O365InboxAttachmentToDisk 5.2.0.jar, 
                             "recursive": "false" 
                             } 
                             ] }'''
