@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage ('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean compile assembly:single'
             }
             post {
                 success {
