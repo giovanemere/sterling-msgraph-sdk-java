@@ -23,5 +23,20 @@ pipeline {
                 sh 'mkdir -p target/surefire-reports'
             }
         }
+        stage('Publish Artifactory') {
+            steps {
+                script {
+                    // Upload Artifactory
+                    rtUpload (  serverId: ConnJfrogDevSecOps,
+                        spec: '''{ "files": [ {  
+                            "pattern": $WORKSPACE/target/*.jar, 
+                            "target": "DevSecOps/SCCOLSFG/sfg_o365_cf/Artifact/", 
+                            "recursive": "false" 
+                            } 
+                            ] }'''
+                    )
+                }
+            }
+        }
     }
 }
