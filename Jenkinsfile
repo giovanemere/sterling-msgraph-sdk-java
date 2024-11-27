@@ -14,6 +14,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mvn test'
+                sh 'mkdir -p target/surefire-reports'
             }
             post {
                 always {
