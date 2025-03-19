@@ -49,3 +49,7 @@ pom_assembly.xml
 
 ##Variables Pruebas Unitarias
 src/test/resources/variables.properties
+
+
+## Certificados
+Certificados/
