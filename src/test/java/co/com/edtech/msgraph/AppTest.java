@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 import javax.mail.internet.AddressException;
 
@@ -13,16 +15,24 @@ import org.junit.jupiter.api.Test;
 class AppTest {
 
     private App app;
+    private Properties properties;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         app = new App();
+        properties = new Properties();
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("variables.properties")) {
+            if (input == null) {
+                throw new IOException("Unable to find variables.properties");
+            }
+            properties.load(input);
+        }
     }
 
     @Test
     void setEmail_validEmail_setsEmail() throws AddressException {
-        app.setEmail("sfg_domiciliacion@edtech.com.co");
-        assertEquals("sfg_domiciliacion@edtech.com.co", app.getEmail());
+        app.setEmail(properties.getProperty("email"));
+        assertEquals(properties.getProperty("email"), app.getEmail());
     }
 
     @Test
@@ -32,8 +42,8 @@ class AppTest {
 
     @Test
     void setDestinationFilePath_validPath_setsPath() {
-        app.setDestinationFilePath("D:\\Repositorios\\edtech\\temp\\mail-attachment");
-        assertEquals("D:\\Repositorios\\edtech\\temp\\mail-attachment", app.getDestinationFilePath());
+        app.setDestinationFilePath(properties.getProperty("destinationFilePath"));
+        assertEquals(properties.getProperty("destinationFilePath"), app.getDestinationFilePath());
     }
 
     @Test
@@ -43,8 +53,8 @@ class AppTest {
 
     @Test
     void setClientId_validId_setsId() {
-        app.setClientId("validId");
-        assertEquals("validId", app.getClientId());
+        app.setClientId(properties.getProperty("clientId"));
+        assertEquals(properties.getProperty("clientId"), app.getClientId());
     }
 
     @Test
@@ -54,25 +64,31 @@ class AppTest {
 
     @Test
     void init_validParams_setsParams() throws IOException, NoSuchFieldException, AddressException {
-        String[] args = {"-email", "sfg_domiciliacion@edtech.com.co", "-dir", "D:\\Repositorios\\edtech\\temp\\mail-attachment", "-tenant", "d98b231e-79bb-4aff-b916-0157f4cdc5bc", "-client", "fee4cb62-31c3-4361-90f3-b34c46c953ff", "-secret", "DEk8Q~Rarg4JsLDF3OLy3txerGEGjoj9-HlL7a4L"};
+        String[] args = {
+                "-email", properties.getProperty("email"),
+                "-dir", properties.getProperty("destinationFilePath"),
+                "-tenant", properties.getProperty("tenantId"),
+                "-client", properties.getProperty("clientId"),
+                "-secret", properties.getProperty("clientSecret")
+        };
         app.init(args);
-        assertEquals("sfg_domiciliacion@edtech.com.co", app.getEmail());
-        assertEquals("D:\\Repositorios\\edtech\\temp\\mail-attachment", app.getDestinationFilePath());
-        assertEquals("d98b231e-79bb-4aff-b916-0157f4cdc5bc", app.getTenantId());
-        assertEquals("fee4cb62-31c3-4361-90f3-b34c46c953ff", app.getClientId());
-        assertEquals("DEk8Q~Rarg4JsLDF3OLy3txerGEGjoj9-HlL7a4L", app.getClientSecret());
+        assertEquals(properties.getProperty("email"), app.getEmail());
+        assertEquals(properties.getProperty("destinationFilePath"), app.getDestinationFilePath());
+        assertEquals(properties.getProperty("tenantId"), app.getTenantId());
+        assertEquals(properties.getProperty("clientId"), app.getClientId());
+        assertEquals(properties.getProperty("clientSecret"), app.getClientSecret());
     }
 
     @Test
     void init_invalidParams_throwsIOException() {
-        String[] args = {"-email", "sfg_domiciliacion@edtech.com.co", "-dir"};
+        String[] args = {"-email", properties.getProperty("email"), "-dir"};
         assertThrows(IOException.class, () -> app.init(args));
     }
 
     @Test
     void validate_missingParameters_throwsIOException() throws AddressException {
-        app.setEmail("sfg_domiciliacion@edtech.com.co");
-        app.setDestinationFilePath("D:\\Repositorios\\edtech\\temp\\mail-attachment");
+        app.setEmail(properties.getProperty("email"));
+        app.setDestinationFilePath(properties.getProperty("destinationFilePath"));
         assertThrows(IOException.class, () -> app.validate());
     }
 }
