@@ -77,11 +77,9 @@ public class Client {
 
         // Setup proxy for the token credential from azure-identity
         // From the com.azure.core.http.* packages
-        final ProxyOptions options = new ProxyOptions(Type.HTTP, proxyAddress);
-        final HttpClient client = new NettyAsyncHttpClientBuilder().proxy(options)
-                .build();
-
         ClientCertificateCredential credential = new ClientCertificateCredentialBuilder()
+                .httpClient(new NettyAsyncHttpClientBuilder().proxy(new ProxyOptions(Type.HTTP, proxyAddress))
+                        .build())
                 .clientId(clientId).tenantId(tenantId)
                 .pfxCertificate(clientCertificatePath)
                 .clientCertificatePassword(clientCertificatePassword)
