@@ -3,7 +3,7 @@ package co.com.edtech.msgraph;
 import com.microsoft.graph.serviceclient.GraphServiceClient;
 import org.apache.commons.validator.routines.EmailValidator;
 
-import javax.mail.internet.AddressException;
+import jakarta.mail.internet.AddressException;
 import java.io.IOException;
 
 import org.slf4j.Logger;
@@ -108,7 +108,7 @@ public class App {
 
     public void setEmail(String email) throws AddressException {
         if(! EmailValidator.getInstance().isValid(email)){
-            throw new javax.mail.internet.AddressException();
+            throw new jakarta.mail.internet.AddressException();
         }
         this.email = email;
     }

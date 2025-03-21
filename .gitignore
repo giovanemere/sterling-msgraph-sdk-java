@@ -47,6 +47,14 @@ resources/
 pom_shade.xml
 pom_assembly.xml
 
-## configracion
-target/
-sterling-msgraph-sdk-java.jar
+##Variables Pruebas Unitarias
+src/test/resources/variables.properties
+
+
+## Certificados
+Certificados/
+
+
+
+## artifact
+artifact/*.jar
