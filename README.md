@@ -1,8 +1,12 @@
 # O365InboxAttachmentToDisk
+
 Este proyecto Java, `O365InboxAttachmentToDisk`, es una aplicación que utiliza Microsoft Graph API para descargar archivos adjuntos de correos electrónicos de Office 365 y guardarlos en el disco.
+
 ## Estructura del Proyecto
+
 La estructura del proyecto sigue una organización estándar de Maven:
 
+```
 ├── .idea/                 # Configuración de IntelliJ IDEA
 ├── .vscode/                # Configuración de Visual Studio Code
 ├── artifact/              # Artefactos de construcción (JARs)
@@ -23,15 +27,20 @@ La estructura del proyecto sigue una organización estándar de Maven:
 ├── pushChanges.sh         # Script para subir cambios a Git
 ├── README.md              # Este archivo
 └── app.5.4.0.sh           # Script para ejecutar la aplicación
-
+```
 
 ## `co.com.edtech.msgraph.App`
+
 `App.java` es la clase principal que inicia la aplicación. Esta clase orquesta el flujo de la aplicación, incluyendo la autenticación con Microsoft Graph, la conexión al buzón de correo, la descarga de archivos adjuntos y el guardado de estos en el disco.
+
 ## Compilar el Proyecto
+
 El proyecto utiliza Maven para la gestión de dependencias y la construcción. Para compilar el proyecto, sigue estos pasos:
-1.  Asegúrate de tener instalado Java Development Kit (JDK) 17 o superior y Maven.
-2.  Abre una terminal y navega al directorio raíz del proyecto (donde se encuentra el archivo `pom.xml`).
-3.  Ejecuta el siguiente comando:
+
+1. Asegúrate de tener instalado Java Development Kit (JDK) 17 o superior y Maven.
+2. Abre una terminal y navega al directorio raíz del proyecto (donde se encuentra el archivo `pom.xml`).
+3. Ejecuta el siguiente comando:
+
 ```bash
     mvn clean install
     ```
@@ -156,3 +165,4 @@ Importante:
     • Verifica que las rutas de los archivos y directorios en el script sean correctas para tu sistema.
     • Revisa los logs de la aplicación para detectar posibles errores o warnings durante la ejecución.
     • Seguridad: Maneja los valores de las variables (especialmente certificatePassword, privateCertificate) con cuidado y no los expongas en repositorios públicos. Considera usar variables de entorno o un sistema de gestión de secretos más robusto en un entorno de producción.
+```
