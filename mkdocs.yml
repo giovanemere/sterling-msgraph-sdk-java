@@ -1,0 +1,52 @@
+site_name: 'Sterling Microsoft Graph SDK Java'
+site_description: 'SDK Java para integración con Microsoft Graph API'
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - API Documentation: api.md
+  - Installation: installation.md
+  - Usage Guide: usage.md
+  - Examples: examples.md
+  - Deployment: deployment.md
+  - Development: development.md
+
+plugins:
+  - techdocs-core
+  - search
+
+theme:
+  name: material
+  palette:
+    primary: blue
+    accent: blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - toc:
+      permalink: true
+
+repo_url: https://github.com/giovanemere/sterling-msgraph-sdk-java
+edit_uri: edit/master/docs/
+
+extra:
+  version:
+    provider: mike
+  generator: false

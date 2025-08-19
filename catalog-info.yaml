@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sterling-msgraph-sdk-java
+  title: Sterling Msgraph Sdk Java
+  description: Servicio backend desarrollado en Java/Maven
+  annotations:
+    github.com/project-slug: giovanemere/sterling-msgraph-sdk-java
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - backend
+    - sterling
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: sterling
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: sterling
+  title: Sterling System
+  description: Sistema sterling
+spec:
+  owner: platform-team
