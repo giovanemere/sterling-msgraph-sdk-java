@@ -58,3 +58,7 @@ Certificados/
 
 ## artifact
 artifact/*.jar
+# Environment variables
+.env
+.env.local
+.env.production

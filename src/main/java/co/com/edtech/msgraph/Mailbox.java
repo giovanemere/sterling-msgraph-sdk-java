@@ -25,8 +25,18 @@ public class Mailbox {
     private final static Logger logger = LoggerFactory.getLogger(Mailbox.class);
 
     private static void moveMessage2Processed(GraphServiceClient client, Message mail){
-        MailFolder processedFolder = getProcessedFolder(client);
-        moveMessage(client, mail, processedFolder);
+        try {
+            MailFolder processedFolder = getProcessedFolder(client);
+            if (processedFolder != null) {
+                moveMessage(client, mail, processedFolder);
+                logger.info("Mensaje movido a carpeta processed: {}", mail.getSubject());
+            } else {
+                logger.warn("No se pudo mover el mensaje - carpeta processed no disponible");
+            }
+        } catch (Exception e) {
+            logger.error("Error al mover mensaje a processed: {}", e.getMessage(), e);
+            // Continuar procesamiento sin fallar completamente
+        }
     }
 
     private static void moveMessage (GraphServiceClient client, Message mail, MailFolder folder){
@@ -76,30 +86,100 @@ public class Mailbox {
                 //e.printStackTrace();
                 logger.warn("Error guardando adjunto del correo: {}", msg.getSubject(), e);
             }
-            moveMessage2Processed(client, msg);
+            
+            // Intentar mover mensaje, pero continuar si falla
+            try {
+                moveMessage2Processed(client, msg);
+            } catch (Exception e) {
+                logger.error("Error moviendo mensaje '{}' a processed: {}", msg.getSubject(), e.getMessage());
+                // Continuar con el siguiente mensaje
+            }
         }
     }
 
     public static MailFolder getProcessedFolder(GraphServiceClient client){
-        MailFolder processedFolder;
+        MailFolder processedFolder = null;
         try {
-            processedFolder = Objects.requireNonNull(Objects.requireNonNull(client.users().byUserId(USER_ID).mailFolders().byMailFolderId(INBOX).childFolders().get())
-                    .getValue()).stream().filter(currentFolder -> PROCESSED_FOLDER.equals(currentFolder.getDisplayName())).findFirst().orElseThrow(NoSuchElementException::new);
-            // System.out.println(processedFolder.getDisplayName());
+            // Intentar obtener la carpeta processed existente
+            List<MailFolder> childFolders = Objects.requireNonNull(
+                client.users().byUserId(USER_ID).mailFolders().byMailFolderId(INBOX).childFolders().get()
+            ).getValue();
+            
+            if (childFolders != null) {
+                processedFolder = childFolders.stream()
+                    .filter(currentFolder -> PROCESSED_FOLDER.equalsIgnoreCase(currentFolder.getDisplayName()))
+                    .findFirst()
+                    .orElse(null);
+            }
+            
+            // Si no se encuentra, intentar crearla
+            if (processedFolder == null) {
+                logger.info("Carpeta 'processed' no encontrada, intentando crear...");
+                processedFolder = createChildFolder(client, USER_ID, INBOX, PROCESSED_FOLDER);
+                logger.info("Carpeta 'processed' creada exitosamente");
+            } else {
+                logger.info("Carpeta 'processed' encontrada: {}", processedFolder.getId());
+            }
+            
         } catch (Exception e) {
-            //e.printStackTrace();
-            logger.error(e.getMessage(), e);
-            processedFolder = createChildFolder(client, USER_ID, INBOX, PROCESSED_FOLDER);
+            logger.error("Error al obtener/crear carpeta processed: {}", e.getMessage());
+            // Si falla la creación porque ya existe, intentar buscarla nuevamente
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                try {
+                    Thread.sleep(1000); // Esperar un momento
+                    List<MailFolder> retryFolders = Objects.requireNonNull(
+                        client.users().byUserId(USER_ID).mailFolders().byMailFolderId(INBOX).childFolders().get()
+                    ).getValue();
+                    
+                    if (retryFolders != null) {
+                        processedFolder = retryFolders.stream()
+                            .filter(folder -> PROCESSED_FOLDER.equalsIgnoreCase(folder.getDisplayName()))
+                            .findFirst()
+                            .orElse(null);
+                    }
+                } catch (Exception retryException) {
+                    logger.error("Error en reintento: {}", retryException.getMessage());
+                }
+            }
         }
 
-        return processedFolder; //!= null ? processedFolder : createChildFolder(client, USER_ID, INBOX, PROCESSED_FOLDER);
+        if (processedFolder == null) {
+            throw new RuntimeException("No se pudo obtener o crear la carpeta 'processed'");
+        }
+
+        return processedFolder;
     }
 
     public static MailFolder createChildFolder(GraphServiceClient client, String user, String parent, String folder){
-        MailFolder mailFolder = new MailFolder();
-        mailFolder.setDisplayName(folder);
-        mailFolder.setIsHidden(Boolean.FALSE);
-        return client.users().byUserId(user).mailFolders().byMailFolderId(parent).childFolders().post(mailFolder);
+        try {
+            MailFolder mailFolder = new MailFolder();
+            mailFolder.setDisplayName(folder);
+            mailFolder.setIsHidden(Boolean.FALSE);
+            MailFolder createdFolder = client.users().byUserId(user).mailFolders().byMailFolderId(parent).childFolders().post(mailFolder);
+            logger.info("Carpeta '{}' creada exitosamente", folder);
+            return createdFolder;
+        } catch (Exception e) {
+            logger.error("Error al crear carpeta '{}': {}", folder, e.getMessage());
+            // Si la carpeta ya existe, intentar obtenerla
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                logger.info("La carpeta '{}' ya existe, intentando obtenerla...", folder);
+                try {
+                    List<MailFolder> existingFolders = Objects.requireNonNull(
+                        client.users().byUserId(user).mailFolders().byMailFolderId(parent).childFolders().get()
+                    ).getValue();
+                    
+                    if (existingFolders != null) {
+                        return existingFolders.stream()
+                            .filter(f -> folder.equalsIgnoreCase(f.getDisplayName()))
+                            .findFirst()
+                            .orElse(null);
+                    }
+                } catch (Exception getException) {
+                    logger.error("Error al obtener carpeta existente: {}", getException.getMessage());
+                }
+            }
+            throw new RuntimeException("No se pudo crear o obtener la carpeta: " + folder, e);
+        }
     }
 
     private static void saveAttachment(Message msg, String folderPath) throws IOException{

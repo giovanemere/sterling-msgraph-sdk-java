@@ -1,0 +1,1025 @@
+{
+	"info": {
+		"name": "Microsoft Graph Sterling - Complete Collection",
+		"description": "Complete Microsoft Graph API collection with standard processing, batch processing, and verification features",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Get Access Token (Client Secret)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('access_token', response.access_token);",
+									"    console.log('✅ Token obtained and saved');",
+									"    console.log('Token expires in:', response.expires_in, 'seconds');",
+									"    pm.test('Token obtained successfully', function () {",
+									"        pm.expect(response.access_token).to.not.be.undefined;",
+									"        pm.expect(response.token_type).to.equal('Bearer');",
+									"    });",
+									"} else {",
+									"    console.log('❌ Failed to get token:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{client_secret}}",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "{{scope}}",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "{{grant_type}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token",
+							"protocol": "https",
+							"host": [
+								"login.microsoftonline.com"
+							],
+							"path": [
+								"{{tenant_id}}",
+								"oauth2",
+								"v2.0",
+								"token"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📁 Folder Management",
+			"item": [
+				{
+					"name": "List Mail Folders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('📁 Found', response.value.length, 'mail folders');",
+									"    ",
+									"    // Find inbox folder ID",
+									"    const inboxFolder = response.value.find(folder => folder.displayName.toLowerCase() === 'inbox');",
+									"    if (inboxFolder) {",
+									"        pm.environment.set('inbox_folder_id', inboxFolder.id);",
+									"        console.log('📥 Inbox folder ID saved');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/mailFolders",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"mailFolders"
+							]
+						}
+					}
+				},
+				{
+					"name": "List Inbox Child Folders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('📂 Found', response.value.length, 'child folders in inbox');",
+									"    ",
+									"    // Look for processed folder",
+									"    const processedFolder = response.value.find(folder => folder.displayName.toLowerCase() === 'processed');",
+									"    if (processedFolder) {",
+									"        pm.environment.set('processed_folder_id', processedFolder.id);",
+									"        console.log('✅ Processed folder found and ID saved');",
+									"    } else {",
+									"        console.log('ℹ️ Processed folder not found - will need to create it');",
+									"        pm.environment.set('create_processed_folder', 'true');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/mailFolders/inbox/childFolders",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"mailFolders",
+								"inbox",
+								"childFolders"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Processed Folder",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (pm.environment.get('create_processed_folder') !== 'true') {",
+									"    console.log('ℹ️ Processed folder already exists, skipping creation');",
+									"    pm.execution.skipRequest();",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('processed_folder_id', response.id);",
+									"    pm.environment.set('create_processed_folder', 'false');",
+									"    console.log('✅ Processed folder created successfully');",
+									"    console.log('📁 Folder ID:', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"displayName\": \"processed\",\n    \"isHidden\": false\n}"
+						},
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/mailFolders/inbox/childFolders",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"mailFolders",
+								"inbox",
+								"childFolders"
+							]
+						}
+					}
+				},
+				{
+					"name": "📋 List Messages in Processed Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('📋 Found', response.value.length, 'messages in processed folder');",
+									"    ",
+									"    if (response.value.length > 0) {",
+									"        console.log('\\n=== PROCESSED MESSAGES ===');",
+									"        response.value.forEach((msg, index) => {",
+									"            console.log(`${index + 1}. Subject: ${msg.subject}`);",
+									"            console.log(`   From: ${msg.from.emailAddress.address}`);",
+									"            console.log(`   Received: ${new Date(msg.receivedDateTime).toLocaleString()}`);",
+									"            console.log(`   Has Attachments: ${msg.hasAttachments ? 'Yes' : 'No'}`);",
+									"            console.log('   ---');",
+									"        });",
+									"        console.log('=========================\\n');",
+									"    } else {",
+									"        console.log('📭 No messages found in processed folder');",
+									"    }",
+									"    ",
+									"    pm.test('Successfully retrieved processed messages', function () {",
+									"        pm.expect(pm.response.code).to.equal(200);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/mailFolders/{{processed_folder_id}}/messages?$select=id,subject,from,receivedDateTime,hasAttachments&$orderby=receivedDateTime desc",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"mailFolders",
+								"{{processed_folder_id}}",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "$select",
+									"value": "id,subject,from,receivedDateTime,hasAttachments"
+								},
+								{
+									"key": "$orderby",
+									"value": "receivedDateTime desc"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📧 Mail Operations",
+			"item": [
+				{
+					"name": "Get Messages with Attachments (Java Filter)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('📎 Found', response.value.length, 'messages with attachments');",
+									"    ",
+									"    if (response.value.length > 0) {",
+									"        const firstMessage = response.value[0];",
+									"        pm.environment.set('message_id', firstMessage.id);",
+									"        console.log('💾 First message ID saved for attachment processing');",
+									"        console.log('📧 Subject:', firstMessage.subject);",
+									"        console.log('👤 From:', firstMessage.from.emailAddress.address);",
+									"        ",
+									"        // Save attachments info if available",
+									"        if (firstMessage.attachments && firstMessage.attachments.length > 0) {",
+									"            const fileAttachments = firstMessage.attachments.filter(att => att['@odata.type'] === '#microsoft.graph.fileAttachment');",
+									"            if (fileAttachments.length > 0) {",
+									"                pm.environment.set('attachment_id', fileAttachments[0].id);",
+									"                console.log('📎 First attachment ID saved:', fileAttachments[0].name);",
+									"            }",
+									"        }",
+									"        ",
+									"        // Save all message IDs for batch processing",
+									"        const messageIds = response.value.map(msg => msg.id);",
+									"        pm.environment.set('all_message_ids', JSON.stringify(messageIds));",
+									"        pm.environment.set('messages_to_process', JSON.stringify(response.value));",
+									"        console.log('📦 Saved', messageIds.length, 'message IDs for batch processing');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/mailFolders/inbox/messages?$filter=hasAttachments eq true&$expand=attachments&$select=id,subject,from,receivedDateTime,hasAttachments,attachments",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"mailFolders",
+								"inbox",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "$filter",
+									"value": "hasAttachments eq true"
+								},
+								{
+									"key": "$expand",
+									"value": "attachments"
+								},
+								{
+									"key": "$select",
+									"value": "id,subject,from,receivedDateTime,hasAttachments,attachments"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Move Message to Processed Folder",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('message_id') || !pm.environment.get('processed_folder_id')) {",
+									"    console.log('❌ Missing message_id or processed_folder_id');",
+									"    pm.execution.skipRequest();",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    console.log('✅ Message moved to processed folder successfully');",
+									"    pm.test('Message moved successfully', function () {",
+									"        pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"    });",
+									"} else {",
+									"    console.log('❌ Failed to move message:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"destinationId\": \"{{processed_folder_id}}\"\n}"
+						},
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/messages/{{message_id}}/move",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"messages",
+								"{{message_id}}",
+								"move"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📎 Attachment Operations",
+			"item": [
+				{
+					"name": "List Message Attachments",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Skip if message was already moved",
+									"if (pm.environment.get('message_moved') === 'true') {",
+									"    console.log('ℹ️ Message already moved, skipping attachment check');",
+									"    pm.execution.skipRequest();",
+									"    return;",
+									"}",
+									"",
+									"let messageId = pm.environment.get('message_id');",
+									"if (!messageId) {",
+									"    console.log('❌ No message_id found. Run previous requests first.');",
+									"    pm.execution.skipRequest();",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/messages/{{message_id}}/attachments",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"messages",
+								"{{message_id}}",
+								"attachments"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get File Attachment Content",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('✅ File attachment content retrieved');",
+									"    console.log('📄 File name:', response.name);",
+									"    console.log('📏 Content size:', response.size, 'bytes');",
+									"    console.log('🔗 Content type:', response.contentType);",
+									"    ",
+									"    if (response.contentBytes) {",
+									"        console.log('💾 Content bytes available for download');",
+									"        // In Java, this would be saved using Files.write()",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/messages/{{message_id}}/attachments/{{attachment_id}}",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"messages",
+								"{{message_id}}",
+								"attachments",
+								"{{attachment_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔄 Batch Processing",
+			"item": [
+				{
+					"name": "📦 Process All Messages with Attachments",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if we have messages to process",
+									"const messagesJson = pm.environment.get('messages_to_process');",
+									"if (!messagesJson) {",
+									"    console.log('❌ No messages found. Run \"Get Messages with Attachments\" first.');",
+									"    pm.execution.skipRequest();",
+									"    return;",
+									"}",
+									"",
+									"const processedFolderId = pm.environment.get('processed_folder_id');",
+									"if (!processedFolderId) {",
+									"    console.log('❌ Processed folder ID not found. Run folder setup first.');",
+									"    pm.execution.skipRequest();",
+									"    return;",
+									"}",
+									"",
+									"const messages = JSON.parse(messagesJson);",
+									"console.log('🚀 Starting batch processing of', messages.length, 'messages');",
+									"",
+									"// Initialize batch processing variables",
+									"pm.environment.set('batch_current_index', '0');",
+									"pm.environment.set('batch_total_messages', messages.length.toString());",
+									"pm.environment.set('batch_processed_count', '0');",
+									"pm.environment.set('batch_failed_count', '0');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// This is a placeholder request - actual batch processing happens in the loop below",
+									"console.log('📋 Batch processing setup completed');",
+									"console.log('ℹ️ Use the \"Process Single Message (Loop)\" request to process messages one by one');",
+									"",
+									"const totalMessages = pm.environment.get('batch_total_messages');",
+									"console.log('📊 Total messages to process:', totalMessages);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "🔄 Process Single Message (Loop)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const messagesJson = pm.environment.get('messages_to_process');",
+									"const currentIndex = parseInt(pm.environment.get('batch_current_index') || '0');",
+									"",
+									"if (!messagesJson) {",
+									"    console.log('❌ No messages to process');",
+									"    pm.execution.skipRequest();",
+									"    return;",
+									"}",
+									"",
+									"const messages = JSON.parse(messagesJson);",
+									"",
+									"if (currentIndex >= messages.length) {",
+									"    console.log('✅ All messages processed!');",
+									"    const processedCount = pm.environment.get('batch_processed_count');",
+									"    const failedCount = pm.environment.get('batch_failed_count');",
+									"    console.log('📊 Summary: Processed:', processedCount, 'Failed:', failedCount);",
+									"    pm.execution.skipRequest();",
+									"    return;",
+									"}",
+									"",
+									"const currentMessage = messages[currentIndex];",
+									"pm.environment.set('current_message_id', currentMessage.id);",
+									"pm.environment.set('current_message_subject', currentMessage.subject);",
+									"pm.environment.set('current_message_from', currentMessage.from.emailAddress.address);",
+									"",
+									"console.log(`🔄 Processing message ${currentIndex + 1}/${messages.length}`);",
+									"console.log('📧 Subject:', currentMessage.subject);",
+									"console.log('👤 From:', currentMessage.from.emailAddress.address);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const currentIndex = parseInt(pm.environment.get('batch_current_index') || '0');",
+									"let processedCount = parseInt(pm.environment.get('batch_processed_count') || '0');",
+									"let failedCount = parseInt(pm.environment.get('batch_failed_count') || '0');",
+									"",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    processedCount++;",
+									"    console.log('✅ Message moved successfully');",
+									"    pm.environment.set('batch_processed_count', processedCount.toString());",
+									"} else {",
+									"    failedCount++;",
+									"    console.log('❌ Failed to move message:', pm.response.text());",
+									"    pm.environment.set('batch_failed_count', failedCount.toString());",
+									"}",
+									"",
+									"// Move to next message",
+									"pm.environment.set('batch_current_index', (currentIndex + 1).toString());",
+									"",
+									"// Continue processing if there are more messages",
+									"const messagesJson = pm.environment.get('messages_to_process');",
+									"const messages = JSON.parse(messagesJson);",
+									"",
+									"if (currentIndex + 1 < messages.length) {",
+									"    console.log('⏭️ Moving to next message...');",
+									"    setTimeout(() => {",
+									"        postman.setNextRequest('🔄 Process Single Message (Loop)');",
+									"    }, 1000); // 1 second delay between requests",
+									"} else {",
+									"    console.log('🎉 Batch processing completed!');",
+									"    console.log('📊 Final Summary:');",
+									"    console.log('   ✅ Successfully processed:', processedCount);",
+									"    console.log('   ❌ Failed:', failedCount);",
+									"    console.log('   📊 Total:', messages.length);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"destinationId\": \"{{processed_folder_id}}\"\n}"
+						},
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}/messages/{{current_message_id}}/move",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}",
+								"messages",
+								"{{current_message_id}}",
+								"move"
+							]
+						}
+					}
+				},
+				{
+					"name": "📊 Batch Processing Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const totalMessages = pm.environment.get('batch_total_messages') || '0';",
+									"const currentIndex = pm.environment.get('batch_current_index') || '0';",
+									"const processedCount = pm.environment.get('batch_processed_count') || '0';",
+									"const failedCount = pm.environment.get('batch_failed_count') || '0';",
+									"",
+									"console.log('📊 BATCH PROCESSING STATUS');",
+									"console.log('========================');",
+									"console.log('📦 Total messages:', totalMessages);",
+									"console.log('🔄 Current index:', currentIndex);",
+									"console.log('✅ Successfully processed:', processedCount);",
+									"console.log('❌ Failed:', failedCount);",
+									"console.log('📈 Progress:', Math.round((parseInt(currentIndex) / parseInt(totalMessages)) * 100) + '%');",
+									"console.log('========================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔧 Utilities & Validation",
+			"item": [
+				{
+					"name": "Validate Email Access",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    console.log('✅ Email access validated');",
+									"    console.log('👤 Display Name:', response.displayName);",
+									"    console.log('📧 Mail:', response.mail);",
+									"    console.log('🆔 User Principal Name:', response.userPrincipalName);",
+									"} else if (pm.response.code === 403) {",
+									"    console.log('⚠️ Access forbidden - check permissions');",
+									"} else {",
+									"    console.log('❌ Validation failed:', pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/users/{{mail_email}}",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"users",
+								"{{mail_email}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Health Check - Graph API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Graph API is accessible', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    console.log('✅ Microsoft Graph API is healthy');",
+									"} else {",
+									"    console.log('❌ Graph API health check failed');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/me",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"me"
+							]
+						}
+					}
+				},
+				{
+					"name": "🧹 Reset Batch Variables",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Clear all batch processing variables",
+									"pm.environment.unset('batch_current_index');",
+									"pm.environment.unset('batch_total_messages');",
+									"pm.environment.unset('batch_processed_count');",
+									"pm.environment.unset('batch_failed_count');",
+									"pm.environment.unset('current_message_id');",
+									"pm.environment.unset('current_message_subject');",
+									"pm.environment.unset('current_message_from');",
+									"pm.environment.unset('messages_to_process');",
+									"pm.environment.unset('all_message_ids');",
+									"",
+									"console.log('🧹 All batch processing variables cleared');",
+									"console.log('✅ Ready for new batch processing session');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://graph.microsoft.com/v1.0/me",
+							"protocol": "https",
+							"host": [
+								"graph.microsoft.com"
+							],
+							"path": [
+								"v1.0",
+								"me"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

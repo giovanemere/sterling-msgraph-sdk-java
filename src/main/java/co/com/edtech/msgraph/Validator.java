@@ -2,15 +2,22 @@ package co.com.edtech.msgraph;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.commons.validator.routines.EmailValidator;
 
 public class Validator {
 
     public static boolean isNullOrEmpty(String value){
         return value == null || value.trim().isEmpty();
+    }
+
+    public static boolean isValidEmail(String email) {
+        if (isNullOrEmpty(email)) {
+            return false;
+        }
+        return EmailValidator.getInstance().isValid(email);
     }
 
     public static boolean validatePath(String textPath){
