@@ -1,15 +1,25 @@
 site_name: 'Sterling Microsoft Graph SDK Java'
-site_description: 'SDK Java para integración con Microsoft Graph API'
+site_description: 'Aplicación Java para procesar adjuntos de correos de Office 365 usando Microsoft Graph API'
 
 nav:
   - Home: index.md
-  - Architecture: architecture.md
-  - API Documentation: api.md
-  - Installation: installation.md
-  - Usage Guide: usage.md
-  - Examples: examples.md
-  - Deployment: deployment.md
-  - Development: development.md
+  - Changelog: CHANGELOG.md
+  - Configuración: DELETED_ITEMS_CONFIGURATION.md
+  - Diseño:
+    - Requisitos: design/requirements.md
+    - Arquitectura: design/architecture.md
+    - Decisiones: design/decisions.md
+  - Build:
+    - Guía de Build: build/build-guide.md
+    - Desarrollo: build/development.md
+    - Instalación: build/installation.md
+  - Implementación:
+    - Deployment: implementation/deployment-guide.md
+    - Uso: implementation/usage.md
+  - Soporte:
+    - Troubleshooting: support/troubleshooting.md
+    - API Reference: support/api.md
+    - Postman: support/postman.md
 
 plugins:
   - techdocs-core
@@ -32,7 +42,11 @@ theme:
 markdown_extensions:
   - admonition
   - codehilite
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.details

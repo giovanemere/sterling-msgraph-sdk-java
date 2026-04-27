@@ -20,22 +20,24 @@ import org.slf4j.LoggerFactory;
 public class Mailbox {
     private static String USER_ID;
     private final static String INBOX = "inbox";
-    private final static String PROCESSED_FOLDER = "processed";
+    private static String PROCESSED_FOLDER = "deleteditems"; // Por defecto elementos eliminados
     private static String PATH;
     private final static Logger logger = LoggerFactory.getLogger(Mailbox.class);
 
-    private static void moveMessage2Processed(GraphServiceClient client, Message mail){
+    private static void moveMessageToDestinationFolder(GraphServiceClient client, Message mail){
         try {
-            MailFolder processedFolder = getProcessedFolder(client);
-            if (processedFolder != null) {
-                moveMessage(client, mail, processedFolder);
-                logger.info("Mensaje movido a carpeta processed: {}", mail.getSubject());
+            MailFolder destinationFolder = getDestinationFolder(client);
+            if (destinationFolder != null) {
+                moveMessage(client, mail, destinationFolder);
+                logger.info("📁 Mensaje movido a {}: {}", 
+                           getWellKnownFolderDisplayName(PROCESSED_FOLDER),
+                           mail.getSubject() != null ? mail.getSubject() : "Sin asunto");
             } else {
-                logger.warn("No se pudo mover el mensaje - carpeta processed no disponible");
+                logger.warn("⚠️ Carpeta {} no disponible, continuando...", getWellKnownFolderDisplayName(PROCESSED_FOLDER));
             }
         } catch (Exception e) {
-            logger.error("Error al mover mensaje a processed: {}", e.getMessage(), e);
-            // Continuar procesamiento sin fallar completamente
+            logger.warn("⚠️ No se pudo mover mensaje: {}", e.getMessage());
+            // Continuar procesamiento sin fallar
         }
     }
 
@@ -60,6 +62,21 @@ public class Mailbox {
 
     public static void readMailFolder(GraphServiceClient client, String myFolderId, String destinationPath, String email){
         Mailbox.USER_ID = email;
+        
+        // Configurar carpeta destino desde variable de entorno
+        String processedFolderName = System.getenv("PROCESSED_FOLDER");
+        if (processedFolderName != null && !processedFolderName.trim().isEmpty()) {
+            PROCESSED_FOLDER = processedFolderName.trim();
+        } else {
+            PROCESSED_FOLDER = "deleteditems"; // Por defecto usar carpeta eliminados
+        }
+        
+        if (isWellKnownFolder(PROCESSED_FOLDER)) {
+            logger.info("📁 Usando carpeta: {}", getWellKnownFolderDisplayName(PROCESSED_FOLDER));
+        } else {
+            throw new RuntimeException("❌ Solo se permiten carpetas well-known. Configurar PROCESSED_FOLDER con: deleteditems, sentitems, drafts, junkemail");
+        }
+        
         readMailFolder(client, myFolderId, destinationPath);
     }
     public static void readMailFolder(GraphServiceClient client, String myFolderId){
@@ -77,10 +94,10 @@ public class Mailbox {
         for(Message msg: messages){
             //System.out.println(msg.getSubject());
             mailFolder =getSubfolderFromMailAddress(Objects.requireNonNull(Objects.requireNonNull(msg.getFrom()).getEmailAddress()).getAddress());
-            System.out.println(mailFolder);
+            logger.info("📁 Carpeta destino: {}", mailFolder);
             try {
                 Files.createDirectories(Paths.get(PATH + mailFolder));
-                System.out.println(PATH + mailFolder);
+                logger.info("📂 Ruta creada: {}", PATH + mailFolder);
                 saveAttachment(msg, PATH + mailFolder);
             } catch (IOException e) {
                 //e.printStackTrace();
@@ -89,98 +106,59 @@ public class Mailbox {
             
             // Intentar mover mensaje, pero continuar si falla
             try {
-                moveMessage2Processed(client, msg);
+                moveMessageToDestinationFolder(client, msg);
             } catch (Exception e) {
-                logger.error("Error moviendo mensaje '{}' a processed: {}", msg.getSubject(), e.getMessage());
+                logger.error("Error moviendo mensaje '{}' a {}: {}", msg.getSubject(), getWellKnownFolderDisplayName(PROCESSED_FOLDER), e.getMessage());
                 // Continuar con el siguiente mensaje
             }
         }
     }
 
-    public static MailFolder getProcessedFolder(GraphServiceClient client){
-        MailFolder processedFolder = null;
+
+
+    public static MailFolder getDestinationFolder(GraphServiceClient client){
         try {
-            // Intentar obtener la carpeta processed existente
-            List<MailFolder> childFolders = Objects.requireNonNull(
-                client.users().byUserId(USER_ID).mailFolders().byMailFolderId(INBOX).childFolders().get()
-            ).getValue();
-            
-            if (childFolders != null) {
-                processedFolder = childFolders.stream()
-                    .filter(currentFolder -> PROCESSED_FOLDER.equalsIgnoreCase(currentFolder.getDisplayName()))
-                    .findFirst()
-                    .orElse(null);
-            }
-            
-            // Si no se encuentra, intentar crearla
-            if (processedFolder == null) {
-                logger.info("Carpeta 'processed' no encontrada, intentando crear...");
-                processedFolder = createChildFolder(client, USER_ID, INBOX, PROCESSED_FOLDER);
-                logger.info("Carpeta 'processed' creada exitosamente");
+            if (isWellKnownFolder(PROCESSED_FOLDER)) {
+                logger.info("📁 Obteniendo carpeta well-known: '{}' ({})", PROCESSED_FOLDER, getWellKnownFolderDisplayName(PROCESSED_FOLDER));
+                MailFolder folder = client.users().byUserId(USER_ID).mailFolders().byMailFolderId(PROCESSED_FOLDER).get();
+                logger.info("✅ Carpeta '{}' obtenida: {}", PROCESSED_FOLDER, folder.getDisplayName());
+                return folder;
             } else {
-                logger.info("Carpeta 'processed' encontrada: {}", processedFolder.getId());
+                throw new RuntimeException("❌ Solo se permiten carpetas well-known. Configurar PROCESSED_FOLDER con: deleteditems, sentitems, drafts, junkemail");
             }
-            
         } catch (Exception e) {
-            logger.error("Error al obtener/crear carpeta processed: {}", e.getMessage());
-            // Si falla la creación porque ya existe, intentar buscarla nuevamente
-            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
-                try {
-                    Thread.sleep(1000); // Esperar un momento
-                    List<MailFolder> retryFolders = Objects.requireNonNull(
-                        client.users().byUserId(USER_ID).mailFolders().byMailFolderId(INBOX).childFolders().get()
-                    ).getValue();
-                    
-                    if (retryFolders != null) {
-                        processedFolder = retryFolders.stream()
-                            .filter(folder -> PROCESSED_FOLDER.equalsIgnoreCase(folder.getDisplayName()))
-                            .findFirst()
-                            .orElse(null);
-                    }
-                } catch (Exception retryException) {
-                    logger.error("Error en reintento: {}", retryException.getMessage());
-                }
-            }
+            throw new RuntimeException("❌ Error obteniendo carpeta '" + PROCESSED_FOLDER + "': " + e.getMessage());
         }
-
-        if (processedFolder == null) {
-            throw new RuntimeException("No se pudo obtener o crear la carpeta 'processed'");
-        }
-
-        return processedFolder;
     }
 
-    public static MailFolder createChildFolder(GraphServiceClient client, String user, String parent, String folder){
-        try {
-            MailFolder mailFolder = new MailFolder();
-            mailFolder.setDisplayName(folder);
-            mailFolder.setIsHidden(Boolean.FALSE);
-            MailFolder createdFolder = client.users().byUserId(user).mailFolders().byMailFolderId(parent).childFolders().post(mailFolder);
-            logger.info("Carpeta '{}' creada exitosamente", folder);
-            return createdFolder;
-        } catch (Exception e) {
-            logger.error("Error al crear carpeta '{}': {}", folder, e.getMessage());
-            // Si la carpeta ya existe, intentar obtenerla
-            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
-                logger.info("La carpeta '{}' ya existe, intentando obtenerla...", folder);
-                try {
-                    List<MailFolder> existingFolders = Objects.requireNonNull(
-                        client.users().byUserId(user).mailFolders().byMailFolderId(parent).childFolders().get()
-                    ).getValue();
-                    
-                    if (existingFolders != null) {
-                        return existingFolders.stream()
-                            .filter(f -> folder.equalsIgnoreCase(f.getDisplayName()))
-                            .findFirst()
-                            .orElse(null);
-                    }
-                } catch (Exception getException) {
-                    logger.error("Error al obtener carpeta existente: {}", getException.getMessage());
-                }
-            }
-            throw new RuntimeException("No se pudo crear o obtener la carpeta: " + folder, e);
+    /**
+     * Verifica si el nombre de carpeta corresponde a una carpeta well-known de Office 365
+     */
+    private static boolean isWellKnownFolder(String folderName) {
+        return "inbox".equalsIgnoreCase(folderName) ||
+               "sentitems".equalsIgnoreCase(folderName) ||
+               "drafts".equalsIgnoreCase(folderName) ||
+               "deleteditems".equalsIgnoreCase(folderName) ||
+               "junkemail".equalsIgnoreCase(folderName) ||
+               "outbox".equalsIgnoreCase(folderName);
+    }
+
+    /**
+     * Obtiene el nombre descriptivo de una carpeta well-known
+     */
+    private static String getWellKnownFolderDisplayName(String folderName) {
+        switch (folderName.toLowerCase()) {
+            case "inbox": return "Bandeja de entrada";
+            case "sentitems": return "Elementos enviados";
+            case "drafts": return "Borradores";
+            case "deleteditems": return "Elementos eliminados";
+            case "junkemail": return "Correo no deseado";
+            case "outbox": return "Bandeja de salida";
+            default: return folderName;
         }
     }
+
+
 
     private static void saveAttachment(Message msg, String folderPath) throws IOException{
         List<Attachment> items = msg.getAttachments();
@@ -199,7 +177,7 @@ public class Mailbox {
     private static void saveFileAttachment(FileAttachment file, String folderPath) throws IOException{
         if(file.getContentBytes() == null)
             return;
-        System.out.println("Writing file " + file.getName());
+        logger.info("📄 Escribiendo archivo: {}", file.getName());
         Files.write(Paths.get(folderPath + file.getName()), file.getContentBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
