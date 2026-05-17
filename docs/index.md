@@ -1,90 +1,39 @@
-# 📚 Sterling Microsoft Graph SDK - Documentación
+# O365InboxAttachmentToDisk
 
-## 🎯 Descripción
+Aplicación Java: **Microsoft Graph** (adjuntos) + **Sterling GFS** (Cipher, `app.5.4.0.sh`).
 
-Aplicación Java para procesar adjuntos de correos de Office 365 usando Microsoft Graph API. Descarga adjuntos organizadamente y mueve mensajes a carpetas well-known.
+## Empezar aquí
 
-## 📋 Estructura de Documentación
+| Rol | Enlace |
+|-----|--------|
+| Operaciones / despliegue | [Manual completo](implementacion/MANUAL-O365-GRAPH.md) |
+| Planificación | [Backlog](implementacion/00-BACKLOG-y-orden-implementacion.md) |
+| Índice de toda la doc | [README.md](README.md) |
+| Arquitectura C4 | [arquitectura/README.md](arquitectura/README.md) |
+| Entregable GFS | [artifact/README.md](../artifact/README.md) |
+| Agente / Claude Code | [CLAUDE.md](../CLAUDE.md) |
 
-### 🎨 [Diseño](design/)
-- [📋 Requisitos del Sistema](design/requirements.md)
-- [🏗️ Arquitectura](design/architecture.md)
-- [🎯 Decisiones de Diseño](design/decisions.md)
+## Documentación por carpeta
 
-### 🔨 [Build](build/)
-- [🔨 Guía de Build](build/build-guide.md)
-- [🛠️ Guía de Desarrollo](build/development.md)
-- [📦 Instalación](build/installation.md)
+- **implementacion/** — manual único + backlog ([índice](implementacion/README.md))  
+- **decisions/** — ADR  
+- **runbooks/** — índice operativo  
+- **definiciones/** — rutas GFS, glosario  
+- **arquitectura/** — modelo C4 ([índice](arquitectura/README.md))  
+- **design/** — requisitos, decisiones (resumen)  
+- **build/** — Maven  
+- **support/** — API, troubleshooting, Postman  
 
-### 🚀 [Implementación](implementation/)
-- [🚀 Guía de Deployment](implementation/deployment-guide.md)
-- [📖 Guía de Uso](implementation/usage.md)
-- [🗑️ Configuración de Carpetas](DELETED_ITEMS_CONFIGURATION.md)
+## Cambio importante (v2.0)
 
-### 🆘 [Soporte](support/)
-- [🚨 Troubleshooting](support/troubleshooting.md)
-- [📚 Referencia de API](support/api.md)
-- [🧪 Postman Collection](support/postman.md)
+Los mensajes ya **no** van a una carpeta `processed` creada bajo Inbox; van a **Elementos eliminados** (`deleteditems`) u otra well-known. Detalle: [HISTORICO-CAMBIOS.md](HISTORICO-CAMBIOS.md).
 
-## 🚀 Inicio Rápido
+## Quick start
 
-### 1. Configuración
 ```bash
-# Configurar variables de entorno
-export TENANT_ID="your-tenant-id"
-export CLIENT_ID="your-client-id"
-export CLIENT_SECRET="your-client-secret"
-export MAIL_CORREO="mailbox@domain.com"
-export PATH_DESTINATION="/data/attachments"
-export PROCESSED_FOLDER="deleteditems"
+cp secrets.env.example secrets.env
+source scripts/load-secrets.sh
+./build.sh
 ```
 
-### 2. Build
-```bash
-./compile.sh
-```
-
-### 3. Ejecución
-```bash
-java -jar target/O365InboxAttachmentToDisk-*.jar
-```
-
-## ✅ Características Principales
-
-- ✅ **Simplicidad**: Solo usa carpetas well-known de Office 365
-- ✅ **Seguridad**: Client Credentials Flow con Azure AD
-- ✅ **Organización**: Archivos organizados por dominio/usuario
-- ✅ **Confiabilidad**: Sin creación de carpetas personalizadas
-- ✅ **Proxy Support**: Compatible con redes corporativas
-
-## 🏗️ Arquitectura Simplificada
-
-```mermaid
-graph LR
-    A[📧 Inbox] --> B[🔍 Filter Messages]
-    B --> C[📎 Download Attachments]
-    C --> D[💾 Save to Folders]
-    D --> E[🗑️ Move to Well-Known Folder]
-```
-
-## 📊 Métricas del Proyecto
-
-- **Líneas de código**: ~120 (70% reducción)
-- **Dependencias**: Microsoft Graph SDK + Azure Identity
-- **Tiempo de startup**: < 5 segundos
-- **Memoria**: < 512MB heap
-- **Compatibilidad**: Java 17+, todos los SO
-
-## 🔗 Enlaces Útiles
-
-- [Microsoft Graph Documentation](https://docs.microsoft.com/en-us/graph/)
-- [Azure AD App Registration](https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps)
-- [Office 365 Admin Center](https://admin.microsoft.com/)
-
-## 📞 Soporte
-
-Para soporte técnico, consultar:
-1. [Troubleshooting Guide](support/troubleshooting.md)
-2. [API Reference](support/api.md)
-3. Logs de aplicación
-4. Equipo de desarrollo
+Ver [build/development.md](build/development.md).

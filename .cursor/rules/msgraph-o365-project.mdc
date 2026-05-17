@@ -1,0 +1,185 @@
+---
+description: Reglas O365 Graph + Sterling GFS — código, IDE, build, seguridad, despliegue
+alwaysApply: true
+---
+
+# O365InboxAttachmentToDisk — reglas de desarrollo
+
+**Rol:** Integración Microsoft Graph + operación Sterling GFS.  
+**Objetivo:** Cero alucinaciones. Rutas, flags, nombres de campo y dependencias deben existir en el repo.
+
+---
+
+## 1. Stack y herramientas
+
+| Componente | Valor / ruta |
+|------------|----------------|
+| JDK | **17** (`JAVA_HOME`, ej. `/usr/lib/jvm/temurin-17-jdk-amd64`) |
+| Build | Maven 3.x, `pom.xml` en raíz |
+| Versión artefacto | `pom.xml` → `project.version` (ej. `5.4.3`) |
+| Graph SDK | `microsoft-graph` + `microsoft-graph-core` (ver `pom.xml`) |
+| JAR shaded | `target/O365InboxAttachmentToDisk-<version>.jar` |
+| Compilador | `maven.compiler.release=17` (no `source`/`target` sueltos) |
+
+**Prohibido inventar:** clases Java extra, flags `--nombre`, carpeta `processed` bajo Inbox, rutas GFS no listadas abajo.
+
+---
+
+## 2. Clases Java (solo cuatro)
+
+| Clase | Rol |
+|-------|-----|
+| `App` | `main`, CLI, `Client.resolve`, `Mailbox.readMailFolder`; **sin** imports Graph/Azure/SLF4J |
+| `Client` | `GraphServiceClient` (secret/cert, proxy); `Client.resolve(...)` |
+| `Mailbox` | Inbox + adjuntos + move a carpeta well-known |
+| `Validator` | Email (`commons-validator`), paths, proxy |
+
+**Prohibido:** `AppEnhanced`, `MailboxEnhanced`, `Main`, `AuthProvider`, etc.
+
+### 2.1 `App.java`
+
+- CLI: pares `-opción valor` (ver §3). **Rule switch** en `setParams`.
+- Errores en `main`: `System.err` + `App.run(args, err)`; exit `0`/`1`.
+- No importar `GraphServiceClient`, `EmailValidator`, `AddressException`, `org.slf4j`.
+
+### 2.2 `Mailbox.java`
+
+- Campo estático: **`destinationWellKnownFolder`** (default `"deleteditems"`).
+- Variable de entorno: solo **`System.getenv("PROCESSED_FOLDER")`** — no renombrar el nombre del env.
+- **Prohibido:** `createChildFolder`, carpeta custom `processed`, constante `INBOX` muerta.
+- Well-known válidos: `deleteditems`, `sentitems`, `drafts`, `junkemail`, `inbox`, `outbox`.
+
+### 2.3 `Client.java`
+
+- Variable local `credentialHttpClient` — no sombrear campo estático `client`.
+- Credenciales: secret o certificado PEM/PFX según CLI.
+
+### 2.4 `pom.xml`
+
+- `slf4j-api`: sin `<version>` en `<dependencies>` (gestionado en `dependencyManagement`).
+- `slf4j-simple`: versión explícita `${slf4j.version}`.
+- OWASP / SpotBugs: plugins definidos; en build rápido usar `-Ddependency-check.skip=true -Dspotbugs.skip=true`.
+
+---
+
+## 3. CLI (`App.java`)
+
+Pares `opción valor` — **no** `--nombre`:
+
+| Flag | Significado |
+|------|-------------|
+| `-tenant` | Tenant Azure AD |
+| `-client` | Client ID |
+| `-secret` | Client secret (o certificado) |
+| `-certificate` / `-certificatePassword` | Auth por cert |
+| `-email` | Buzón |
+| `-dir` | Directorio destino adjuntos |
+| `-host` / `-port` | Proxy |
+
+`App.FOLDER_ID` = `"Inbox"` (origen lectura).
+
+---
+
+## 4. Variables de entorno
+
+| Variable | Quién la lee |
+|----------|----------------|
+| `PROCESSED_FOLDER` | Solo `Mailbox.java` (`getenv` → asigna `destinationWellKnownFolder`) |
+| `TENANT_ID`, `CLIENT_SECRET`, `MAIL_CORREO`, … | Scripts / Postman; **no** el JAR automáticamente |
+
+Secretos: **`secrets.env`** (gitignored). Plantilla: `secrets.env.example`. Cargar: `source scripts/load-secrets.sh`.
+
+**Proxy corporativo (puerto 3128):**
+
+| Perfil | Host | Cuándo |
+|--------|------|--------|
+| `PROXY_HOST` | `latam-proxy-SLV.glb.lnm.bns` | GFS Sterling (DNS interno; cifrado en `.enc`) |
+| `PROXY_HOST_LAB` | `192.168.137.3` | Lab Hyper-V (`O365_PROXY_PROFILE=lab`) |
+| `PROXY_HOST_WSL` | `172.21.224.1` | Cursor/WSL (auto si `WSL_DISTRO_NAME`; o `O365_PROXY_PROFILE=wsl`) |
+
+---
+
+## 5. Rutas GFS (lab `192.168.137.190`)
+
+| Ruta | Uso |
+|------|-----|
+| `/gfssterling/jar/5.0.0/` | JAR versionado |
+| `/gfssterling/jar/app.conf` | `FileJar`, `JARPATH`, Netty |
+| `/gfssterling/jar/app.5.4.0.sh` | Wrapper producción |
+| `/gfssterling/jar/mail_list` | correo → `.enc` |
+| `/gfssterling/jar/mail-attachment/<WFID>/` | Salida + `ListF.xml` |
+| `/gfssterling/cipher/` | CipherConsole, `*.enc` |
+| `/gfssterling/jar/certs/` | Certs (repo: `artifact/jar/certs/`) |
+| `/gfssterling/java/temurin-jre-17.0.13/` | JRE |
+
+**Paridad repo:** `artifact/jar/` ↔ `/gfssterling/jar/`. Tras cambiar versión en `pom.xml`, actualizar `artifact/jar/app.conf` → `FileJar=O365InboxAttachmentToDisk-<version>.jar`.
+
+---
+
+## 6. Cursor / IDE (Java)
+
+1. Abrir carpeta **`sterling-msgraph-sdk-java`** (raíz con `pom.xml`) — evitar workspace multi-carpeta con JASPER si el classpath falla.
+2. Extensión: **Extension Pack for Java** (`vscjava.vscode-java-pack`, `redhat.java`).
+3. **Deshabilitar** extensión **Java de Oracle** (`oracle.oracle-java`) — conflicta con Red Hat y marca `package … does not exist` sin classpath.
+4. Config: `.vscode/settings.json` (JDK 17 fijo, import Maven).
+5. Tras cambiar deps: `./scripts/ide-refresh-maven.sh` → `Java: Clean Java Language Server Workspace` → Reload → `Java: Import Java projects in workspace`.
+6. Panel **JAVA PROJECTS** → `O365InboxAttachmentToDisk` debe aparecer.
+
+**Maven en terminal compila; rojo en IDE sin extensión Java = configuración IDE, no bug de código.**
+
+---
+
+## 7. Build, tests y gate
+
+| Paso | Comando |
+|------|---------|
+| Build rápido | `./scripts/build/compile.sh` o `mvn clean package -Ddependency-check.skip=true -Dspotbugs.skip=true` |
+| Tests unitarios | `mvn test` (9 tests: `AppTest`, `ValidatorTest`) |
+| Gate completo | `./scripts/ci/o365-full-gate.sh` |
+| Solo OWASP | `mvn dependency-check:check` (lento; reporte `target/dependency-check-report.html`; fail CVSS ≥ 7) |
+| SpotBugs | `mvn compile spotbugs:check` |
+
+Variables gate: `SKIP_OWASP=true`, `SKIP_DEPLOY=true`, `SKIP_REMOTE=true`.
+
+CI: `.github/workflows/o365-ci.yml`.
+
+---
+
+## 8. Despliegue lab Sterling
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+export JASPER_SSH_BIN=/mnt/c/Windows/System32/OpenSSH/ssh.exe   # WSL2 → Hyper-V
+export JASPER_SCP_BIN=/mnt/c/Windows/System32/OpenSSH/scp.exe
+source scripts/load-secrets.sh
+./scripts/deploy/deploy-lab.sh
+./scripts/tests/test-permissions.sh
+```
+
+Smoke JAR remoto: `Missing parameters` = OK. E2E: `cd /gfssterling/jar && ./app.5.4.0.sh "<correo>" "<WFID>"`.
+
+---
+
+## 9. Documentación (un tema = un doc)
+
+| Tema | Documento |
+|------|-----------|
+| Índice | `docs/README.md` |
+| Manual operativo | `docs/implementacion/MANUAL-O365-GRAPH.md` |
+| Backlog | `docs/implementacion/00-BACKLOG-y-orden-implementacion.md` |
+| Histórico v2 well-known | `docs/HISTORICO-CAMBIOS.md` |
+| Rutas GFS | `docs/definiciones/ESTANDAR-RUTAS-GFS-O365.md` |
+| Carpetas destino | `docs/DELETED_ITEMS_CONFIGURATION.md` |
+| API CLI | `docs/support/api.md` |
+
+No duplicar tablas largas en respuestas del agente; referenciar el doc.
+
+---
+
+## 10. Reglas anti-regresión
+
+1. No reintroducir carpeta `processed` ni Postman "Create Processed Folder" como flujo actual.
+2. No poner versiones duplicadas de `slf4j-api` en `pom.xml` dependencies.
+3. No generar `.classpath` con `M2_REPO` para el IDE si Maven import funciona (ver `ide-refresh-maven.sh`).
+4. Cambio de comportamiento → `docs/HISTORICO-CAMBIOS.md` + ADR si aplica.
+5. No commitear `secrets.env` ni certificados con claves privadas.

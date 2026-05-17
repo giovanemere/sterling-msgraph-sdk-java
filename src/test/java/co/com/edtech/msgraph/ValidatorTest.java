@@ -46,6 +46,8 @@ class ValidatorTest {
     @Test
     void testValidateProxy() {
         assertTrue(Validator.validateProxy("localhost", 8080));
+        assertTrue(Validator.validateProxy("172.21.224.1", 3128));
+        assertTrue(Validator.validateProxy("192.168.137.3", 3128));
         assertFalse(Validator.validateProxy("invalid-host-name-that-does-not-exist", 8080));
         assertFalse(Validator.validateProxy("localhost", -1));
     }

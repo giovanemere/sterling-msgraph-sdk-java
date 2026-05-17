@@ -35,10 +35,10 @@ public class Client {
         // Setup proxy for the token credential from azure-identity
         // From the com.azure.core.http.* packages
         final ProxyOptions options = new ProxyOptions(Type.HTTP, proxyAddress);
-        final HttpClient client = new NettyAsyncHttpClientBuilder().proxy(options)
+        final HttpClient credentialHttpClient = new NettyAsyncHttpClientBuilder().proxy(options)
                 .build();
 
-        ClientSecretCredential credential = getSecretCredentials(clientId, tenantId, clientSecret, client);
+        ClientSecretCredential credential = getSecretCredentials(clientId, tenantId, clientSecret, credentialHttpClient);
 
 
         if (credential == null) {
@@ -56,12 +56,12 @@ public class Client {
         return new GraphServiceClient(authProvider, httpClient);
     }
 
-    public static ClientSecretCredential getSecretCredentials(String clientId, String tenantId, String clientSecret, HttpClient client){
+    public static ClientSecretCredential getSecretCredentials(String clientId, String tenantId, String clientSecret, HttpClient httpClient){
         return new ClientSecretCredentialBuilder()
                 .clientId(clientId)
                 .tenantId(tenantId)
                 .clientSecret(clientSecret)
-                .httpClient(client)
+                .httpClient(httpClient)
                 .build();
     }
 
@@ -97,8 +97,9 @@ public class Client {
         final Proxy proxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
         final OkHttpClient httpClient = GraphClientFactory.create().proxy(proxy).build();
 
-        setClient(new GraphServiceClient(authProvider, httpClient));
-        return Client.client;
+        GraphServiceClient graphClient = new GraphServiceClient(authProvider, httpClient);
+        setClient(graphClient);
+        return graphClient;
     }
 
     public static GraphServiceClient getClientByCertificate(String clientId, String tenantId, String clientCertificatePath, String clientCertificatePassword){
@@ -107,8 +108,9 @@ public class Client {
                 .clientId(clientId).tenantId(tenantId).pemCertificate(clientCertificatePath)
                 .clientCertificatePassword(clientCertificatePassword)
                 .build();
-        setClient(new GraphServiceClient(credential, SCOPES));
-        return Client.client;
+        GraphServiceClient graphClient = new GraphServiceClient(credential, SCOPES);
+        setClient(graphClient);
+        return graphClient;
     }
 
     public static GraphServiceClient getClientBySecret(String clientId, String tenantId, String clientSecret){
@@ -118,16 +120,42 @@ public class Client {
         final ClientSecretCredential secretCredential = new ClientSecretCredentialBuilder()
                 .clientId(clientId).tenantId(tenantId).clientSecret(clientSecret)
                 .build();
-        setClient(new GraphServiceClient(secretCredential));
-
-        return Client.client;
+        GraphServiceClient graphClient = new GraphServiceClient(secretCredential);
+        setClient(graphClient);
+        return graphClient;
     }
 
     public static GraphServiceClient getClient(){
-        if(Client.client == null){
+        GraphServiceClient current = Client.client;
+        if (current == null) {
             throw new NullPointerException();
         }
-        return Client.client;
+        return current;
+    }
+
+    /**
+     * Builds a Graph client from CLI credentials (secret or certificate, optional proxy).
+     */
+    public static GraphServiceClient resolve(
+            String clientId,
+            String tenantId,
+            String clientSecret,
+            String certificateFilePath,
+            String certificatePassword,
+            String proxyHost,
+            int proxyPort) throws Exception {
+        boolean useProxy = proxyPort > 0;
+        if (!Validator.isNullOrEmpty(clientSecret)) {
+            if (useProxy) {
+                return getClientBySecret(clientId, tenantId, clientSecret, proxyHost, proxyPort);
+            }
+            return getClientBySecret(clientId, tenantId, clientSecret);
+        }
+        if (useProxy) {
+            return getClientByCertificate(
+                    clientId, tenantId, certificateFilePath, certificatePassword, proxyHost, proxyPort);
+        }
+        return getClientByCertificate(clientId, tenantId, certificateFilePath, certificatePassword);
     }
 
     private static void setClient(GraphServiceClient client){

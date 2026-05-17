@@ -1,128 +1,75 @@
-# 🔄 Changelog - Mejoras Implementadas
+# Changelog
 
-## 📅 Versión 2.1 - Simplificación y Organización
+Formato basado en [Keep a Changelog](https://keepachangelog.com/).  
+Histórico funcional detallado (v2.0 well-known, commits): **[HISTORICO-CAMBIOS.md](HISTORICO-CAMBIOS.md)**.
 
-### ✅ **Mejoras en el Código**
+---
 
-#### 🏷️ **Nomenclatura Mejorada**
-- **Método renombrado**: `moveMessage2Processed()` → `moveMessageToDestinationFolder()`
-- **Método renombrado**: `getProcessedFolder()` → `getDestinationFolder()`
-- **Variable clarificada**: Comentarios actualizados de "processed" a "carpeta destino"
+## [5.4.4] — 2026-05-17
 
-#### 📝 **Logging Mejorado**
-```java
-// Antes
-logger.info("📁 Mensaje movido a processed: {}", subject);
+### Added
+- Paquete offline: `scripts/build/sync-artifact-offline.sh` → `artifact/jar/jars/deps/` + JAR fino.
+- Gate CI: `scripts/ci/o365-full-gate.sh`, deploy lab, perfiles proxy (`PROXY_HOST_WSL` / `PROXY_HOST_LAB`).
 
-// Ahora
-logger.info("📁 Mensaje movido a {}: {}", getWellKnownFolderDisplayName(PROCESSED_FOLDER), subject);
-// Ejemplo: "📁 Mensaje movido a Elementos eliminados: Factura enero"
-```
+### Changed
+- Netty **4.1.133**, Azure Identity **1.16.2**, Kiota **1.8.5**, commons-beanutils **1.11.0**.
+- OWASP dependency-check: PASS con supresiones documentadas; `FAIL_ON_OWASP` opcional.
+- `app.5.4.0.sh`: classpath `jars/deps` para servidor sin Internet.
 
-#### 🎯 **Claridad en Mensajes**
-- **Mensajes específicos**: Muestran la carpeta real (Elementos eliminados, Elementos enviados, etc.)
-- **Errores descriptivos**: Indican exactamente qué carpeta well-known se está usando
-- **Warnings informativos**: Especifican la carpeta que no está disponible
+### Fixed
+- SpotBugs (0 bugs); validación proxy por IP; `App.validate` solo si `-host` definido.
 
-### 🗂️ **Organización de Scripts**
+### Deployed
+- Lab Sterling `192.168.137.190`: JAR 5.4.4 + libs offline en `/gfssterling/jar/jars/deps/`.
 
-#### 📁 **Nueva Estructura**
-```
-scripts/
-├── build/                     # Scripts de compilación
-│   ├── compile.sh            # Compilación completa con validaciones
-│   └── check-hardcoded.sh    # Verificación de código hardcodeado
-├── tests/                    # Scripts de testing
-│   ├── test-deleteditems.sh  # Test carpeta eliminados
-│   ├── test-integration.sh   # Test integración completa
-│   ├── test-permissions.sh   # Test permisos Azure AD
-│   └── validate-solution.sh  # Validación completa
-├── deployment/               # Scripts de deployment
-│   └── deploy.sh            # Deployment automatizado
-├── verify-paths.sh          # Verificador de rutas
-└── fix-paths.sh            # Corrector automático de rutas
-```
+---
 
-#### 🔧 **Scripts Principales**
-- **`./build.sh`**: Script principal de build con validaciones
-- **`./run-tests.sh`**: Suite completa de testing
-- **Rutas corregidas**: Todos los scripts funcionan con la nueva estructura
+## [5.4.3] — 2026-05
 
-#### ✅ **Correcciones Implementadas**
-- **Rutas a JAR**: `target/` → `../../target/` en scripts de subcarpetas
-- **Referencias a scripts**: Rutas relativas corregidas
-- **Mensajes de error**: Referencias actualizadas a scripts principales
-- **Verificación automática**: Scripts para detectar y corregir problemas de rutas
+### Changed
+- Dependencias Microsoft Graph / Azure Identity actualizadas.
+- Documentación: manual único, índice, `secrets.env`, arquitectura Mermaid.
 
-### 🎯 **Funcionalidad Actual**
+### Deployed
+- Lab Sterling `192.168.137.190`: `/gfssterling/jar/5.0.0/O365InboxAttachmentToDisk-5.4.3.jar`.
 
-#### 📧 **Procesamiento de Mensajes**
-1. **Filtrado**: Mensajes con `hasAttachments eq true`
-2. **Descarga**: Adjuntos a estructura `domain/user/archivo.ext`
-3. **Movimiento**: A carpeta well-known configurada (NO a "processed")
+---
 
-#### 🗂️ **Carpetas Soportadas**
-```bash
-PROCESSED_FOLDER=deleteditems  # → Elementos eliminados
-PROCESSED_FOLDER=sentitems     # → Elementos enviados  
-PROCESSED_FOLDER=drafts        # → Borradores
-PROCESSED_FOLDER=junkemail     # → Correo no deseado
-```
+## [5.4.1] — 2026-04
 
-#### 📊 **Logging Actual**
-```
-📁 Usando carpeta: Elementos eliminados
-📁 Obteniendo carpeta well-known: 'deleteditems' (Elementos eliminados)
-✅ Carpeta 'deleteditems' obtenida: Deleted Items
-📁 Mensaje movido a Elementos eliminados: Factura enero 2024
-```
+### Removed
+- Clases duplicadas `AppEnhanced`, `MailboxEnhanced`.
 
-### 🔍 **Verificaciones Implementadas**
+### Changed
+- Reorganización `docs/`, `scripts/`, Postman en `postman/`.
 
-#### 🧪 **Scripts de Verificación**
-- **`scripts/verify-paths.sh`**: Detecta rutas incorrectas en scripts
-- **`scripts/fix-paths.sh`**: Corrige automáticamente rutas problemáticas
-- **Backup automático**: Crea `.backup` antes de modificar scripts
+---
 
-#### ✅ **Validaciones de Build**
-- **Compilación**: Código Java sin errores
-- **Tests unitarios**: Verificación de funcionalidad
-- **Código hardcodeado**: Detección automática
-- **JAR válido**: Generación exitosa con dependencias
+## [2.1] — 2026-04 / 2026-05
 
-### 📈 **Métricas de Mejora**
+### Changed
+- `moveMessage2Processed` → `moveMessageToDestinationFolder`
+- `getProcessedFolder` → `getDestinationFolder`
+- Logs con nombre real de carpeta (ej. "Elementos eliminados")
+- Scripts: `scripts/build/compile.sh`, `run-tests.sh`, `verify-paths.sh`
 
-#### 🎯 **Claridad del Código**
-- **Nombres descriptivos**: Métodos y variables más claros
-- **Logging específico**: Mensajes que indican carpeta real
-- **Comentarios actualizados**: Documentación interna mejorada
+---
 
-#### 🗂️ **Organización**
-- **Scripts organizados**: Por categoría (build, tests, deployment)
-- **Rutas corregidas**: Todos los scripts funcionan correctamente
-- **Verificación automática**: Herramientas para mantener consistencia
+## [2.0] — 2026-04-27
 
-#### 🔧 **Mantenibilidad**
-- **Estructura clara**: Fácil localización de scripts
-- **Corrección automática**: Scripts para resolver problemas comunes
-- **Documentación actualizada**: Refleja cambios implementados
+### Changed
+- **Breaking:** ya no se crea carpeta `processed` bajo Inbox.
+- Destino por `PROCESSED_FOLDER`; default `deleteditems`.
+- Eliminados `createChildFolder()` y reintentos de creación.
 
-## 🎉 **Resultado Final**
+### Removed
+- ~90 líneas de gestión de carpetas personalizadas en `Mailbox.java`.
 
-### ✅ **Lo que se Corrigió**
-- ❌ **Antes**: Mensajes confusos sobre "processed"
-- ✅ **Ahora**: Mensajes claros sobre carpeta específica (ej: "Elementos eliminados")
+Ver commit `67b4547` y [HISTORICO-CAMBIOS.md](HISTORICO-CAMBIOS.md#v20--simplificación-carpetas-well-known-2026-04-27).
 
-- ❌ **Antes**: Scripts con rutas incorrectas
-- ✅ **Ahora**: Todos los scripts funcionan con estructura organizada
+---
 
-- ❌ **Antes**: Nomenclatura técnica confusa
-- ✅ **Ahora**: Nombres descriptivos y claros
+## [1.x] — Legacy
 
-### 🎯 **Funcionalidad Confirmada**
-- ✅ Los mensajes se mueven a la carpeta well-known configurada
-- ✅ NO se mueven a una carpeta llamada "processed"
-- ✅ El logging muestra claramente la carpeta destino real
-- ✅ Todos los scripts funcionan con la nueva estructura
-
-**La aplicación ahora es más clara, mejor organizada y completamente funcional.**
+- Carpeta personalizada `processed` con creación/validación bajo Inbox.
+- Documentación dispersa; sustituida por estructura `docs/` actual.

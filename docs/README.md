@@ -1,192 +1,116 @@
-# O365InboxAttachmentToDisk - Enhanced Version
+# Documentación — O365InboxAttachmentToDisk
 
-Este proyecto Java, `O365InboxAttachmentToDisk`, es una aplicación que utiliza Microsoft Graph API para descargar archivos adjuntos de correos electrónicos de Office 365 y guardarlos en el disco.
+Índice de la documentación en `docs/`. Código Java en `src/`; **entregable de despliegue** en [`artifact/`](../artifact/README.md) (paridad GFS).
 
-## 🆕 Nuevas Funcionalidades
+- **Raíz del repo:** [README.md](../README.md)
+- **Memoria agente:** [CLAUDE.md](../CLAUDE.md)
+- **Backlog / orden:** [implementacion/00-BACKLOG-y-orden-implementacion.md](implementacion/00-BACKLOG-y-orden-implementacion.md)
+- **Manual operativo:** [implementacion/MANUAL-O365-GRAPH.md](implementacion/MANUAL-O365-GRAPH.md)
 
-### 📦 Procesamiento por Lotes
-- Procesa automáticamente todos los mensajes con adjuntos
-- Contadores de éxito y fallos
-- Logging detallado del progreso
-- Manejo robusto de errores
+---
 
-### 📋 Verificación de Carpeta Processed
-- Lista mensajes movidos a la carpeta processed
-- Información detallada de cada mensaje
-- Verificación de que el procesamiento fue exitoso
+## Cómo está organizada `docs/`
 
-### 🔧 Modos de Ejecución
-- **Standard**: Procesamiento tradicional mensaje por mensaje
-- **Batch**: Procesamiento masivo con estadísticas
-- **List**: Verificación de mensajes procesados
+```text
+docs/
+├── README.md                      ← este índice
+├── index.md                       ← portada MkDocs / TechDocs
+├── CHANGELOG.md · HISTORICO-CAMBIOS.md
+├── DELETED_ITEMS_CONFIGURATION.md
+├── decisions/                     ← ADR (por qué)
+├── runbooks/                      ← índice operativo (cómo en prod)
+├── definiciones/                  ← rutas GFS, glosario
+├── arquitectura/                   ← modelo C4 (contexto, contenedores, componentes, vistas)
+├── design/                        ← requisitos, decisiones (resumen diseño)
+├── build/                         ← Maven, instalación
+├── implementacion/                ← manual único + backlog
+└── support/                       ← API, troubleshooting, Postman
+```
 
-## 📚 Documentación
+Código y scripts:
 
-La documentación completa del proyecto se encuentra en la carpeta `docs/`:
+| Ruta | Descripción |
+|------|-------------|
+| [`src/main/java/co/com/edtech/msgraph/`](../src/main/java/co/com/edtech/msgraph/) | App, Client, Mailbox, Validator |
+| [**`artifact/`**](../artifact/README.md) | **Entregable completo** desplegable en GFS |
+| [`artifact/jar/`](../artifact/jar/) | Scripts, config, `mail_list`, `certs/` |
+| [`scripts/`](../scripts/) | build, tests, `load-secrets.sh` |
 
-- **[Instalación](docs/installation.md)** - Configuración e instalación del proyecto
-- **[Arquitectura](docs/architecture.md)** - Diseño y componentes del sistema
-- **[Uso](docs/usage.md)** - Guía de uso de la aplicación
-- **[API](docs/api.md)** - Documentación de la API
-- **[Desarrollo](docs/development.md)** - Guía para desarrolladores
-- **[Despliegue](docs/deployment.md)** - Instrucciones de despliegue
-- **[Postman](docs/postman.md)** - Guía completa de Postman con funcionalidades enhanced
+**Regla Cursor:** [`.cursor/rules/msgraph-o365-project.mdc`](../.cursor/rules/msgraph-o365-project.mdc)
 
-## 🚀 Inicio Rápido
+---
 
-### Prerrequisitos
-- Java Development Kit (JDK) 17 o superior
-- Maven 3.6+
-- Credenciales de Azure AD (tenant_id, client_id, client_secret)
+## 1. Implementación y operación
 
-### Compilar
+| Documento | Contenido |
+|-----------|-----------|
+| [**MANUAL-O365-GRAPH.md**](implementacion/MANUAL-O365-GRAPH.md) | **Manual único** — despliegue, Cipher, GFS, uso, checklist |
+| [**00-BACKLOG-y-orden-implementacion.md**](implementacion/00-BACKLOG-y-orden-implementacion.md) | Checklist B-01…, deuda doc, estado |
+| [implementacion/README.md](implementacion/README.md) | Índice carpeta implementación |
+| [HISTORICO-CAMBIOS.md](HISTORICO-CAMBIOS.md) | v2.0: fin carpeta `processed` → `deleteditems` |
+| [CHANGELOG.md](CHANGELOG.md) | Versiones release |
+
+---
+
+## 2. Arquitectura (modelo C4)
+
+| Documento | Contenido |
+|-----------|-----------|
+| [**arquitectura/README.md**](arquitectura/README.md) | **Índice C4** — niveles 1–4 y vistas complementarias |
+| [01-contexto.md](arquitectura/01-contexto.md) | Nivel 1 — actores y sistemas |
+| [02-contenedores.md](arquitectura/02-contenedores.md) | Nivel 2 — shell, Cipher, JAR, M365 |
+| [03-componentes.md](arquitectura/03-componentes.md) | Nivel 3 — App, Client, Mailbox, Validator |
+| [04-codigo.md](arquitectura/04-codigo.md) | Nivel 4 — fuentes y artefactos |
+| [05-despliegue.md](arquitectura/05-despliegue.md) · [06-dinamica-e2e.md](arquitectura/06-dinamica-e2e.md) | Vistas despliegue y secuencia E2E |
+| [requirements.md](design/requirements.md) | RF/RNF |
+| [decisions.md](design/decisions.md) | Resumen decisiones (enlaza ADR) |
+
+---
+
+## 3. Decisiones (ADR)
+
+| Documento | Contenido |
+|-----------|-----------|
+| [decisions/README.md](decisions/README.md) | Índice ADR |
+| [ADR-001-carpetas-well-known-only.md](decisions/ADR-001-carpetas-well-known-only.md) | Solo well-known; default deleteditems |
+
+---
+
+## 4. Definiciones y normas
+
+| Documento | Contenido |
+|-----------|-----------|
+| [definiciones/README.md](definiciones/README.md) | Glosario |
+| [ESTANDAR-RUTAS-GFS-O365.md](definiciones/ESTANDAR-RUTAS-GFS-O365.md) | Rutas `/gfssterling`, nombres archivos |
+
+---
+
+## 5. Runbooks
+
+| Documento | Contenido |
+|-----------|-----------|
+| [runbooks/README.md](runbooks/README.md) | Índice procedimientos → secciones del manual |
+
+---
+
+## 6. Build y soporte
+
+| Documento | Contenido |
+|-----------|-----------|
+| [build-guide.md](build/build-guide.md) | Maven, JAR shade |
+| [development.md](build/development.md) | Dev local |
+| [installation.md](build/installation.md) | scp lab |
+| [api.md](support/api.md) | Flags CLI, Graph, Swagger local |
+| [openapi/README.md](../openapi/README.md) | OpenAPI + `serve-swagger.sh` |
+| [troubleshooting.md](support/troubleshooting.md) | Errores frecuentes |
+| [postman.md](support/postman.md) | Colección (nota legacy processed) |
+
+---
+
+## 7. MkDocs / TechDocs
+
 ```bash
-mvn clean install
+mkdocs serve   # desde raíz, lee mkdocs.yml
 ```
 
-### Ejecutar
-
-#### Modo Estándar (Original)
-```bash
-./app-enhanced.sh standard
-```
-
-#### 🆕 Modo Batch (Procesamiento Masivo)
-```bash
-./app-enhanced.sh batch
-```
-
-#### 🆕 Listar Mensajes Procesados
-```bash
-./app-enhanced.sh list
-```
-
-#### Script Original (Compatibilidad)
-```bash
-./app.5.4.0.sh
-```
-
-## 📁 Estructura del Proyecto
-
-```
-├── postman/                   # 🆕 Archivos de Postman organizados
-│   ├── Microsoft_Graph_Sterling_Complete.postman_collection.json
-│   ├── Sterling_Graph_Environment.postman_environment.json
-│   └── README.md
-├── docs/                   # Documentación completa
-├── src/main/java/co/com/edtech/msgraph/
-│   ├── App.java           # Punto de entrada original
-│   ├── AppEnhanced.java   # 🆕 Versión mejorada con nuevas funcionalidades
-│   ├── Client.java        # Cliente Microsoft Graph
-│   ├── Mailbox.java       # Operaciones de correo originales
-│   ├── MailboxEnhanced.java # 🆕 Operaciones mejoradas con batch processing
-│   └── Validator.java     # Validaciones
-├── Microsoft_Graph_Sterling_Complete.postman_collection.json # 🆕 Colección completa unificada
-├── Sterling_Graph_Environment.postman_environment.json
-├── app.5.4.0.sh          # Script de ejecución original
-├── app-enhanced.sh       # 🆕 Script mejorado con nuevos modos
-└── POSTMAN_ENHANCED_README.md # 🆕 Documentación de mejoras
-```
-
-## 🔧 Configuración
-
-### Variables de Entorno
-```bash
-TENANT_ID=d98b231e-79bb-4aff-b916-0157f4cdc5bc
-CLIENT_ID=fee4cb62-31c3-4361-90f3-b34c46c953ff
-CLIENT_SECRET=T6r8Q~5-RlZcICyRvcBpDijHWUFZfXIq7NmS.dfb
-MAIL_CORREO=sfg_domiciliacion@edtech.com.co
-PATH_DESTINATION=/path/to/save/attachments
-```
-
-### 🆕 Parámetros de Ejecución Mejorados
-```bash
-java -cp $CLASSPATH co.com.edtech.msgraph.AppEnhanced \
-    -client $CLIENT_ID \
-    -tenant $TENANT_ID \
-    -secret $CLIENT_SECRET \
-    -email $MAIL_CORREO \
-    -dir $PATH_DESTINATION \
-    -batch true \                    # 🆕 Modo batch
-    -list false \                    # 🆕 Listar procesados
-    -certificatePassword $CERTIFICATE_PASSWORD \
-    -host $PROXY_HOST \
-    -port $PROXY_PORT
-```
-
-## 🧪 Testing con Postman
-
-### Colección Original
-El proyecto incluye una colección completa de Postman organizada en subcarpetas:
-
-#### Orden de Ejecución
-1. **🔐 Authentication** - Obtener token OAuth2
-2. **📁 Folder Management** - Gestión de carpetas
-3. **📧 Mail Operations** - Operaciones de correo
-4. **📎 Attachment Operations** - Procesamiento de adjuntos
-
-### 🆕 Colección Mejorada
-Nueva colección con funcionalidades adicionales:
-
-#### Nuevas Secciones
-5. **🔄 Batch Processing** - Procesamiento por lotes automático
-6. **📋 Verification** - Verificación de mensajes procesados
-7. **🧹 Utilities** - Herramientas de limpieza y reset
-
-#### Importar en Postman
-1. Importar `Microsoft_Graph_Sterling_Complete.postman_collection.json` 🆕
-2. Importar `Sterling_Graph_Environment.postman_environment.json`
-3. Seleccionar el environment "Sterling Graph Environment"
-
-## 📊 Funcionalidades
-
-### Originales
-- ✅ Autenticación OAuth2 con Microsoft Graph
-- ✅ Soporte para client secret y certificados
-- ✅ Configuración de proxy
-- ✅ Filtrado de mensajes con adjuntos
-- ✅ Descarga automática de adjuntos
-- ✅ Organización por remitente
-- ✅ Movimiento a carpeta "processed"
-- ✅ Validación de parámetros
-- ✅ Logging y manejo de errores
-
-### 🆕 Nuevas
-- ✅ **Procesamiento por lotes** con estadísticas
-- ✅ **Verificación de mensajes procesados**
-- ✅ **Logging mejorado** con emojis y colores
-- ✅ **Contadores de éxito/fallo**
-- ✅ **Manejo robusto de errores** sin interrumpir el proceso
-- ✅ **Múltiples modos de ejecución**
-- ✅ **Colección Postman mejorada** con bucles automáticos
-- ✅ **Scripts de ejecución flexibles**
-
-## 📈 Comparación de Rendimiento
-
-| Característica | Versión Original | Versión Enhanced |
-|----------------|------------------|------------------|
-| Procesamiento | Secuencial básico | Batch con estadísticas |
-| Logging | Básico | Detallado con emojis |
-| Manejo de errores | Falla en primer error | Continúa procesando |
-| Verificación | Manual | Automática |
-| Postman | Requests individuales | Bucles automáticos |
-| Modos | Solo estándar | Standard/Batch/List |
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 📞 Soporte
-
-Para soporte técnico, consultar:
-- [Documentación completa](docs/)
-- **Colección Postman**: `postman/Microsoft_Graph_Sterling_Complete.postman_collection.json`
-- Crear un issue en el repositorio
+Portada: [index.md](index.md)

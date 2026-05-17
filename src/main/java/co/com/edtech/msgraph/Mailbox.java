@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import com.microsoft.graph.serviceclient.GraphServiceClient;
@@ -19,22 +18,18 @@ import org.slf4j.LoggerFactory;
 
 public class Mailbox {
     private static String USER_ID;
-    private final static String INBOX = "inbox";
-    private static String PROCESSED_FOLDER = "deleteditems"; // Por defecto elementos eliminados
+    /** Well-known id (env {@code PROCESSED_FOLDER}, default {@code deleteditems}). */
+    private static String destinationWellKnownFolder = "deleteditems";
     private static String PATH;
     private final static Logger logger = LoggerFactory.getLogger(Mailbox.class);
 
     private static void moveMessageToDestinationFolder(GraphServiceClient client, Message mail){
         try {
             MailFolder destinationFolder = getDestinationFolder(client);
-            if (destinationFolder != null) {
-                moveMessage(client, mail, destinationFolder);
-                logger.info("📁 Mensaje movido a {}: {}", 
-                           getWellKnownFolderDisplayName(PROCESSED_FOLDER),
-                           mail.getSubject() != null ? mail.getSubject() : "Sin asunto");
-            } else {
-                logger.warn("⚠️ Carpeta {} no disponible, continuando...", getWellKnownFolderDisplayName(PROCESSED_FOLDER));
-            }
+            moveMessage(client, mail, destinationFolder);
+            logger.info("📁 Mensaje movido a {}: {}",
+                    getWellKnownFolderDisplayName(Mailbox.destinationWellKnownFolder),
+                    mail.getSubject() != null ? mail.getSubject() : "Sin asunto");
         } catch (Exception e) {
             logger.warn("⚠️ No se pudo mover mensaje: {}", e.getMessage());
             // Continuar procesamiento sin fallar
@@ -66,13 +61,13 @@ public class Mailbox {
         // Configurar carpeta destino desde variable de entorno
         String processedFolderName = System.getenv("PROCESSED_FOLDER");
         if (processedFolderName != null && !processedFolderName.trim().isEmpty()) {
-            PROCESSED_FOLDER = processedFolderName.trim();
+            Mailbox.destinationWellKnownFolder = processedFolderName.trim();
         } else {
-            PROCESSED_FOLDER = "deleteditems"; // Por defecto usar carpeta eliminados
+            Mailbox.destinationWellKnownFolder = "deleteditems"; // Por defecto usar carpeta eliminados
         }
         
-        if (isWellKnownFolder(PROCESSED_FOLDER)) {
-            logger.info("📁 Usando carpeta: {}", getWellKnownFolderDisplayName(PROCESSED_FOLDER));
+        if (isWellKnownFolder(Mailbox.destinationWellKnownFolder)) {
+            logger.info("📁 Usando carpeta: {}", getWellKnownFolderDisplayName(Mailbox.destinationWellKnownFolder));
         } else {
             throw new RuntimeException("❌ Solo se permiten carpetas well-known. Configurar PROCESSED_FOLDER con: deleteditems, sentitems, drafts, junkemail");
         }
@@ -83,9 +78,11 @@ public class Mailbox {
         String mailFolder;
         List<Message> messages = Objects.requireNonNull(client.users().byUserId(USER_ID).mailFolders().byMailFolderId(myFolderId).messages().get(
                 requestConfiguration -> {
-                    assert requestConfiguration.queryParameters != null;
-                    requestConfiguration.queryParameters.filter = "hasAttachments eq true";
-                    requestConfiguration.queryParameters.expand = new String[]{"attachments"};
+                    var queryParameters = Objects.requireNonNull(
+                            requestConfiguration.queryParameters,
+                            "queryParameters");
+                    queryParameters.filter = "hasAttachments eq true";
+                    queryParameters.expand = new String[]{"attachments"};
                 }
         )).getValue();
         // System.out.println(messages.size());
@@ -108,7 +105,7 @@ public class Mailbox {
             try {
                 moveMessageToDestinationFolder(client, msg);
             } catch (Exception e) {
-                logger.error("Error moviendo mensaje '{}' a {}: {}", msg.getSubject(), getWellKnownFolderDisplayName(PROCESSED_FOLDER), e.getMessage());
+                logger.error("Error moviendo mensaje '{}' a {}: {}", msg.getSubject(), getWellKnownFolderDisplayName(Mailbox.destinationWellKnownFolder), e.getMessage());
                 // Continuar con el siguiente mensaje
             }
         }
@@ -118,16 +115,21 @@ public class Mailbox {
 
     public static MailFolder getDestinationFolder(GraphServiceClient client){
         try {
-            if (isWellKnownFolder(PROCESSED_FOLDER)) {
-                logger.info("📁 Obteniendo carpeta well-known: '{}' ({})", PROCESSED_FOLDER, getWellKnownFolderDisplayName(PROCESSED_FOLDER));
-                MailFolder folder = client.users().byUserId(USER_ID).mailFolders().byMailFolderId(PROCESSED_FOLDER).get();
-                logger.info("✅ Carpeta '{}' obtenida: {}", PROCESSED_FOLDER, folder.getDisplayName());
+            if (isWellKnownFolder(Mailbox.destinationWellKnownFolder)) {
+                logger.info("📁 Obteniendo carpeta well-known: '{}' ({})", Mailbox.destinationWellKnownFolder, getWellKnownFolderDisplayName(Mailbox.destinationWellKnownFolder));
+                MailFolder folder = Objects.requireNonNull(
+                        client.users().byUserId(USER_ID).mailFolders().byMailFolderId(Mailbox.destinationWellKnownFolder).get(),
+                        "mailFolder");
+                String displayName = folder.getDisplayName() != null ? folder.getDisplayName() : Mailbox.destinationWellKnownFolder;
+                logger.info("✅ Carpeta '{}' obtenida: {}", Mailbox.destinationWellKnownFolder, displayName);
                 return folder;
             } else {
                 throw new RuntimeException("❌ Solo se permiten carpetas well-known. Configurar PROCESSED_FOLDER con: deleteditems, sentitems, drafts, junkemail");
             }
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("❌ Error obteniendo carpeta '" + PROCESSED_FOLDER + "': " + e.getMessage());
+            throw new RuntimeException("❌ Error obteniendo carpeta '" + Mailbox.destinationWellKnownFolder + "': " + e.getMessage(), e);
         }
     }
 
@@ -147,15 +149,15 @@ public class Mailbox {
      * Obtiene el nombre descriptivo de una carpeta well-known
      */
     private static String getWellKnownFolderDisplayName(String folderName) {
-        switch (folderName.toLowerCase()) {
-            case "inbox": return "Bandeja de entrada";
-            case "sentitems": return "Elementos enviados";
-            case "drafts": return "Borradores";
-            case "deleteditems": return "Elementos eliminados";
-            case "junkemail": return "Correo no deseado";
-            case "outbox": return "Bandeja de salida";
-            default: return folderName;
-        }
+        return switch (folderName.toLowerCase()) {
+            case "inbox" -> "Bandeja de entrada";
+            case "sentitems" -> "Elementos enviados";
+            case "drafts" -> "Borradores";
+            case "deleteditems" -> "Elementos eliminados";
+            case "junkemail" -> "Correo no deseado";
+            case "outbox" -> "Bandeja de salida";
+            default -> folderName;
+        };
     }
 
 
@@ -166,15 +168,14 @@ public class Mailbox {
         if(Boolean.FALSE.equals(msg.getHasAttachments()) || items == null)
             return;
 
-        for(Attachment item : items){
-            //System.out.println(item instanceof FileAttachment);
-            if(item instanceof FileAttachment){
-                saveFileAttachment((FileAttachment) item, folderPath);
+        for (Attachment item : items) {
+            if (item instanceof FileAttachment fileAttachment) {
+                saveFileAttachment(fileAttachment, folderPath);
             }
         }
     }
 
-    private static void saveFileAttachment(FileAttachment file, String folderPath) throws IOException{
+    private static void saveFileAttachment(FileAttachment file, String folderPath) throws IOException {
         if(file.getContentBytes() == null)
             return;
         logger.info("📄 Escribiendo archivo: {}", file.getName());

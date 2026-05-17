@@ -1,0 +1,25 @@
+{
+  "folders": [
+    {
+      "name": "sterling-msgraph-sdk-java",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "java.jdt.ls.java.home": "/usr/lib/jvm/temurin-17-jdk-amd64",
+    "java.configuration.runtimes": [
+      {
+        "name": "JavaSE-17",
+        "path": "/usr/lib/jvm/temurin-17-jdk-amd64",
+        "default": true
+      }
+    ],
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.maven.enabled": true,
+    "java.import.gradle.enabled": false,
+    "java.jdt.ls.maven.downloadSources": true
+  },
+  "extensions": {
+    "recommendations": ["vscjava.vscode-java-pack"]
+  }
+}

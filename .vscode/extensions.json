@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "redhat.java"
+  ],
+  "unwantedRecommendations": [
+    "oracle.oracle-java"
+  ]
+}

@@ -1,6 +1,9 @@
-# 🗑️ Configuración Simplificada: Carpetas Well-Known
+# Configuración: carpetas well-known
 
-## ✅ **Configuración Actual:**
+> Histórico del cambio v1 (`processed` custom) → v2 (`deleteditems`): [HISTORICO-CAMBIOS.md](HISTORICO-CAMBIOS.md).  
+> Manual: [MANUAL-O365-GRAPH.md](implementacion/MANUAL-O365-GRAPH.md) §8.
+
+## Configuración actual
 
 El sistema ahora usa únicamente **carpetas well-known** de Office 365, eliminando la complejidad de crear carpetas personalizadas.
 
@@ -39,7 +42,7 @@ java -jar target/O365InboxAttachmentToDisk-*.jar [parámetros]
 📁 Usando carpeta: Elementos eliminados
 📁 Obteniendo carpeta well-known: 'deleteditems'
 ✅ Carpeta 'deleteditems' obtenida: Deleted Items
-📁 Mensaje movido a processed: [Asunto del mensaje]
+📁 Mensaje movido a Elementos eliminados: [Asunto del mensaje]
 ```
 
 ## ⚠️ **Restricciones:**

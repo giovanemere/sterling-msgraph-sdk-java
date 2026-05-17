@@ -1,64 +1,45 @@
-Archv de variables
-client=f15da013-07c1-4e22-8427-9cceef7dca43
-tenant=d98b231e-79bb-4aff-b916-0157f4cdc5bc
-MailCorreo=sfg_domiciliacion@edtech.com.co
-pathd=${PathGFS}/jar/mail-attachment/91212
-privateCertificate=/gfssterling/jar/certs/account/edtech.com.co-full.pem
-certificatePassword=ndFRYXsrNETfbF
-proxy=latam-proxy-SLV.glb.lnm.bns
-proxyPort=3128
+#!/bin/bash
+# Genera archivo plano para cifrar con CipherConsole en GFS.
+# Valores desde secrets.env en la raíz del repo (no versionar secretos aquí).
 
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+if [[ -f "${REPO_ROOT}/secrets.env" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${REPO_ROOT}/secrets.env"
+  set +a
+else
+  echo "Cree ${REPO_ROOT}/secrets.env desde secrets.env.example" >&2
+  exit 1
+fi
 
-## Ingresar a ruta cipher
-cd /gfssterling/cipher
+client="${CLIENT_ID_CIPHER:-${CLIENT_ID}}"
+tenant="${TENANT_ID}"
+MailCorreo="${MAIL_CORREO}"
+pathd="${PATH_DESTINATION:-${PathGFS}/jar/mail-attachment/91212}"
+# PRIVATE_CERTIFICATE: artifact/jar/certs/account/<alias>-full.pem (ver certs/README.md)
+privateCertificate="${PRIVATE_CERTIFICATE}"
+certificatePassword="${CERTIFICATE_PASSWORD}"
+proxy="${PROXY_HOST}"
+proxyPort="${PROXY_PORT}"
 
-## Crear Archivo de configurción
-## Asegurese de actualizar las variables client, tenant, privateCertificate, certificatePassword, proxy, proxyPort
-File="sfg_domiciliacion"
+File="${MAIL_CIPHER_FILE:-sfg_domiciliacion}"
 FileDec="$File.enc"
-FileOut="$File"_out
+FileOut="${File}_out"
 pathSalida="/gfssterling/cipher/$FileOut"
->$pathSalida
-echo "client=\"f15da013-07c1-4e22-8427-9cceef7dca43\"" >>$pathSalida
-echo "tenant=\"d98b231e-79bb-4aff-b916-0157f4cdc5bc\"" >>$pathSalida
-echo "privateCertificate=\"/gfssterling/jar/certs/account/edtech.com.co-full.pem\"" >>$pathSalida
-echo "certificatePassword=\"ndFRYXsrNETfbF\"" >>$pathSalida
-echo "proxy=\"latam-proxy-SLV.glb.lnm.bns\"" >>$pathSalida
-echo "proxyPort=\"3128\"" >>$pathSalida
-cat $pathSalida
 
-## Fin creación archivo
+: >"$pathSalida"
+{
+  echo "client=\"${client}\""
+  echo "tenant=\"${tenant}\""
+  echo "privateCertificate=\"${privateCertificate}\""
+  echo "certificatePassword=\"${certificatePassword}\""
+  echo "proxy=\"${proxy}\""
+  echo "proxyPort=\"${proxyPort}\""
+} >>"$pathSalida"
+cat "$pathSalida"
 
-## Pasos de Crear llave de cifrado para el archivo en cipher
-cd /gfssterling/cipher && sh SetupCipher.sh
-
-Opcion 5
-nombre llave sfg_domiciliacion
-Z para salir
-
-
-#Listar llaves Cipher y verificar que se haya creado la llave sfg_domiciliacion
-RutaCipher=/gfssterling/cipher
-RutaFile=/gfssterling/cipher
-FileCipher=$RutaFile/clave.enc
-KeyPrivate=$RutaFile/llavecifrado.key
-KeyCipher="--pwdfile $FileCipher --pwdkey $KeyPrivate"
-cd $RutaCipher && ./CipherConsole list --all $KeyCipher
-
-
-# Cifrar archivo de configuración con Cipher
-File="sfg_domiciliacion"
-FileDec="$File.enc"
-FileOut="$File"_out
-pathCipher="/gfssterling/cipher"
-pathSalida="$pathCipher/$FileOut"
-RutaCipher=$pathCipher
-RutaFile=$pathCipher
-FileCipher=$RutaFile/clave.enc
-KeyPrivate=$RutaFile/llavecifrado.key
-KeyCipher="--pwdfile $FileCipher --pwdkey $KeyPrivate"
-cd $RutaCipher && ./CipherConsole encrypt -i $FileOut -o $FileDec -f enc -n $File $KeyCipher
-ls -ltr $pathCipher/$FileDec
-rm -rf $pathCipher/$FileOut
-ls -ltr $pathCipher
-
+echo ""
+echo "Siguiente: cifrar en GFS con CipherConsole — docs/implementacion/MANUAL-O365-GRAPH.md sección 5.4"
+echo "  cd /gfssterling/cipher"
+echo "  ./CipherConsole encrypt -i ${FileOut} -o ${FileDec} -f enc -n ${File} --pwdfile clave.enc --pwdkey llavecifrado.key"

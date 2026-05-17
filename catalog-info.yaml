@@ -3,7 +3,7 @@ kind: Component
 metadata:
   name: sterling-msgraph-sdk-java
   title: Sterling Msgraph Sdk Java
-  description: Servicio backend desarrollado en Java/Maven
+  description: O365InboxAttachmentToDisk — Graph API adjuntos O365 + Sterling GFS (ver docs/implementacion/MANUAL-O365-GRAPH.md)
   annotations:
     github.com/project-slug: giovanemere/sterling-msgraph-sdk-java
     backstage.io/techdocs-ref: dir:.

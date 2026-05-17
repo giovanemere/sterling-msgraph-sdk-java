@@ -37,21 +37,22 @@ run_test "Postman Collection exists" "[ -f 'postman/Microsoft_Graph_Sterling_Com
 run_test "Postman Environment exists" "[ -f 'postman/Sterling_Graph_Environment.postman_environment.json' ]"
 run_test "Unified documentation exists" "[ -f 'docs/postman.md' ]"
 run_test "JWT script exists and executable" "[ -x 'postman/get-jwt.sh' ]"
-run_test "Environment file exists" "[ -f '.env' ]"
-run_test "JAR file exists" "[ -f '../../target/O365InboxAttachmentToDisk-5.4.1.jar' ]"
+run_test "secrets.env exists" "[ -f '../../secrets.env' ]"
+JAR_FILE=$(ls ../../target/O365InboxAttachmentToDisk-*.jar 2>/dev/null | head -1)
+run_test "JAR file exists" "[ -n \"$JAR_FILE\" ]"
 
 # 2. Configuration Tests
 echo -e "${YELLOW}⚙️  Configuration Tests${NC}"
-run_test "TENANT_ID configured" "grep -q '^TENANT_ID=' .env"
-run_test "CLIENT_ID configured" "grep -q '^CLIENT_ID=' .env"
-run_test "CLIENT_SECRET configured" "grep -q '^CLIENT_SECRET=' .env"
-run_test "MAIL_CORREO configured" "grep -q '^MAIL_CORREO=' .env"
-run_test "PATH_DESTINATION configured" "grep -q '^PATH_DESTINATION=' .env"
+run_test "TENANT_ID configured" "grep -q '^TENANT_ID=' ../../secrets.env"
+run_test "CLIENT_ID configured" "grep -q '^CLIENT_ID=' ../../secrets.env"
+run_test "CLIENT_SECRET configured" "grep -q '^CLIENT_SECRET=' ../../secrets.env"
+run_test "MAIL_CORREO configured" "grep -q '^MAIL_CORREO=' ../../secrets.env"
+run_test "PATH_DESTINATION configured" "grep -q '^PATH_DESTINATION=' ../../secrets.env"
 
 # 3. Functionality Tests
 echo -e "${YELLOW}🔧 Functionality Tests${NC}"
 run_test "JWT generation works" "timeout 10s ./postman/get-jwt.sh | grep -q 'eyJ'"
-run_test "JAR file is valid" "java -jar ../../target/O365InboxAttachmentToDisk-5.4.1.jar -help 2>&1 | grep -q 'Wrong input parameters'"
+run_test "JAR file is valid" "java -jar \"$JAR_FILE\" 2>&1 | grep -q 'Wrong input parameters'"
 run_test "Collection has correct structure" "jq -e '.item | length >= 6' postman/Microsoft_Graph_Sterling_Complete.postman_collection.json"
 run_test "Environment has required variables" "jq -e '.values | map(select(.key == \"tenant_id\" or .key == \"client_id\")) | length >= 2' postman/Sterling_Graph_Environment.postman_environment.json"
 

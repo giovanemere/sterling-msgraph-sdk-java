@@ -96,9 +96,17 @@
       exit 1
   fi
 
-# Directorio base y classpath
+# Directorio base y classpath (offline: jars/deps + JAR fino; ver scripts/build/sync-artifact-offline.sh)
   basedir="$JARPATH"
-  classpath="$basedir/etc:$REPO/netty-buffer-$NETTY_VERSION.jar:$REPO/netty-codec-$NETTY_VERSION.jar:$REPO/netty-codec-http-$NETTY_VERSION.jar:$REPO/netty-codec-http2-$NETTY_VERSION.jar:$REPO/netty-common-$NETTY_VERSION.jar:$REPO/netty-handler-$NETTY_VERSION.jar:$REPO/netty-handler-proxy-$NETTY_VERSION.jar:$JARPATH/$FileJar:$REPO/netty-tcnative-boringssl-static-$NETTY_TCNATIVE_VERSION.Final.jar"
+  classpath="$basedir/etc"
+  if [ -d "$REPO_DEPS" ]; then
+      for dep_jar in "$REPO_DEPS"/*.jar; do
+          [ -f "$dep_jar" ] && classpath="$classpath:$dep_jar"
+      done
+  else
+      classpath="$classpath:$REPO/netty-buffer-$NETTY_VERSION.jar:$REPO/netty-codec-$NETTY_VERSION.jar:$REPO/netty-codec-http-$NETTY_VERSION.jar:$REPO/netty-codec-http2-$NETTY_VERSION.jar:$REPO/netty-common-$NETTY_VERSION.jar:$REPO/netty-handler-$NETTY_VERSION.jar:$REPO/netty-handler-proxy-$NETTY_VERSION.jar:$REPO/netty-tcnative-boringssl-static-$NETTY_TCNATIVE_VERSION.jar"
+  fi
+  classpath="$classpath:$JARPATH/$FileJar"
 
 # Crear directorio temporal
   mkdir -p "$pathd"

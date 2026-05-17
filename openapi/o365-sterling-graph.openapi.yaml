@@ -1,0 +1,409 @@
+openapi: 3.0.3
+info:
+  title: O365 Sterling — Microsoft Graph (subset operativo)
+  description: |
+    Especificación **curada** de las APIs usadas por `O365InboxAttachmentToDisk`
+    y pruebas Postman/Swagger locales.
+
+    - Permiso aplicación requerido: `Mail.ReadWrite` (+ admin consent).
+    - Buzón: `users/{user-id}` con UPN del buzón (`MAIL_CORREO`).
+    - Spec completa Microsoft Graph: ver [README.md](README.md).
+
+    **No** expone un servidor propio del JAR (batch CLI); solo servicios externos.
+  version: 1.0.0
+  contact:
+    name: Sterling MS Graph SDK
+  license:
+    name: Uso interno proyecto Sterling
+
+servers:
+  - url: https://graph.microsoft.com/v1.0
+    description: Microsoft Graph v1.0
+  - url: https://login.microsoftonline.com
+    description: Microsoft Entra ID (OAuth2)
+
+tags:
+  - name: Auth
+    description: Token client credentials (lab / Postman)
+  - name: MailFolders
+    description: Carpetas well-known (inbox, deleteditems, …)
+  - name: Messages
+    description: Mensajes con adjuntos
+  - name: Move
+    description: Mover mensaje tras procesar (v2.0)
+
+paths:
+  /{tenant}/oauth2/v2.0/token:
+    post:
+      tags: [Auth]
+      summary: Obtener access token (client credentials)
+      description: |
+        Usado en desarrollo con `CLIENT_SECRET` desde `secrets.env`.
+        En producción GFS el JAR usa certificado (`ClientCertificateCredential`).
+      servers:
+        - url: https://login.microsoftonline.com
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [client_id, client_secret, scope, grant_type]
+              properties:
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                  format: password
+                scope:
+                  type: string
+                  default: https://graph.microsoft.com/.default
+                grant_type:
+                  type: string
+                  default: client_credentials
+      responses:
+        '200':
+          description: Token emitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{user-id}/mailFolders:
+    get:
+      tags: [MailFolders]
+      summary: Listar carpetas del buzón
+      operationId: listMailFolders
+      security:
+        - graphOAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Colección de carpetas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailFolderCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{user-id}/mailFolders/{mailFolder-id}:
+    get:
+      tags: [MailFolders]
+      summary: Obtener carpeta (well-known o por id)
+      description: |
+        En el JAR: `getDestinationFolder` usa well-known (`deleteditems`, etc.).
+      operationId: getMailFolder
+      security:
+        - graphOAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/MailFolderId'
+      responses:
+        '200':
+          description: Carpeta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailFolder'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{user-id}/mailFolders/{mailFolder-id}/messages:
+    get:
+      tags: [Messages]
+      summary: Mensajes de una carpeta (Inbox con adjuntos)
+      description: |
+        Uso en `Mailbox.readMailFolder`: filtro `hasAttachments eq true`
+        y `$expand=attachments` para traer bytes en la misma respuesta.
+      operationId: listFolderMessages
+      security:
+        - graphOAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/MailFolderId'
+        - name: $filter
+          in: query
+          schema:
+            type: string
+            example: hasAttachments eq true
+        - name: $expand
+          in: query
+          schema:
+            type: string
+            example: attachments
+        - name: $top
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: $select
+          in: query
+          schema:
+            type: string
+            example: id,subject,from,hasAttachments
+      responses:
+        '200':
+          description: Mensajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{user-id}/messages/{message-id}/attachments:
+    get:
+      tags: [Messages]
+      summary: Listar adjuntos de un mensaje
+      description: Alternativa si no se usa `$expand=attachments` en el listado.
+      operationId: listMessageAttachments
+      security:
+        - graphOAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          description: Adjuntos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentCollection'
+
+  /users/{user-id}/messages/{message-id}/attachments/{attachment-id}:
+    get:
+      tags: [Messages]
+      summary: Obtener adjunto (metadatos + contentBytes si file)
+      operationId: getMessageAttachment
+      security:
+        - graphOAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/MessageId'
+        - $ref: '#/components/parameters/AttachmentId'
+      responses:
+        '200':
+          description: Adjunto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileAttachment'
+
+  /users/{user-id}/messages/{message-id}/move:
+    post:
+      tags: [Move]
+      summary: Mover mensaje a carpeta destino
+      description: |
+        Tras descargar adjuntos a GFS. `destinationId` = id de carpeta well-known
+        (p. ej. id devuelto por GET `mailFolders/deleteditems`).
+      operationId: moveMessage
+      security:
+        - graphOAuth2: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/MessageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveRequest'
+            examples:
+              toDeletedItems:
+                summary: Mover a Elementos eliminados
+                value:
+                  destinationId: AAMkAGI2...
+      responses:
+        '201':
+          description: Mensaje movido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  securitySchemes:
+    graphOAuth2:
+      type: oauth2
+      description: |
+        Client credentials. En Swagger UI use **Authorize** con token obtenido
+        del endpoint `/token` o `source scripts/load-secrets.sh` + Postman.
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+          scopes:
+            https://graph.microsoft.com/.default: Acceso aplicación Graph
+
+  parameters:
+    TenantId:
+      name: tenant
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Directory (tenant) ID o dominio
+      example: "{tenant-id}"
+    UserId:
+      name: user-id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: UPN del buzón (ej. sfg_domiciliacion@dominio.com)
+    MailFolderId:
+      name: mailFolder-id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Well-known (`inbox`, `deleteditems`) o id Graph
+      example: inbox
+    MessageId:
+      name: message-id
+      in: path
+      required: true
+      schema:
+        type: string
+    AttachmentId:
+      name: attachment-id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+        access_token:
+          type: string
+        scope:
+          type: string
+
+    MailFolder:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        wellKnownName:
+          type: string
+          enum: [inbox, sentitems, drafts, deleteditems, junkemail, outbox]
+
+    MailFolderCollection:
+      type: object
+      properties:
+        value:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailFolder'
+
+    EmailAddress:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+          format: email
+
+    Recipient:
+      type: object
+      properties:
+        emailAddress:
+          $ref: '#/components/schemas/EmailAddress'
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        contentType:
+          type: string
+        size:
+          type: integer
+        '@odata.type':
+          type: string
+
+    FileAttachment:
+      allOf:
+        - $ref: '#/components/schemas/Attachment'
+        - type: object
+          properties:
+            contentBytes:
+              type: string
+              format: byte
+              description: Base64
+
+    AttachmentCollection:
+      type: object
+      properties:
+        value:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        hasAttachments:
+          type: boolean
+        from:
+          $ref: '#/components/schemas/Recipient'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+
+    MessageCollection:
+      type: object
+      properties:
+        value:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        '@odata.nextLink':
+          type: string
+
+    MoveRequest:
+      type: object
+      required: [destinationId]
+      properties:
+        destinationId:
+          type: string
+          description: Id de carpeta destino (well-known resuelto vía GET mailFolder)
+
+  responses:
+    Unauthorized:
+      description: Token inválido o expirado
+    Forbidden:
+      description: Falta Mail.ReadWrite o admin consent
+    NotFound:
+      description: Recurso no encontrado
+    BadRequest:
+      description: Parámetros inválidos
+
+security:
+  - graphOAuth2: []

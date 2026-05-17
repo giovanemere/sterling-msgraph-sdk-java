@@ -1,4 +1,5 @@
 target/
+lib/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -30,9 +31,12 @@ target/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+!scripts/build/
 
 ### VS Code ###
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
 ### Mac OS ###
 .DS_Store
@@ -51,14 +55,27 @@ pom_assembly.xml
 src/test/resources/variables.properties
 
 
-## Certificados
+## Certificados (legacy — usar artifact/jar/certs/)
 Certificados/
 
-
-
-## artifact
+## artifact (JARs offline: generar con scripts/build/sync-artifact-offline.sh)
 artifact/*.jar
-# Environment variables
+artifact/jar/5.0.0/*.jar
+artifact/jar/jars/**/*.jar
+# Environment variables (secretos reales solo en secrets.env)
 .env
 .env.local
 .env.production
+secrets.env
+test-deleteditems.log
+tmp-test-deleteditems/
+
+# Certificados: carpeta canónica artifact/jar/certs/ (estructura sí en Git)
+artifact/jar/certs/**/*.key
+artifact/jar/certs/**/*.pem
+artifact/jar/certs/**/*.p12
+artifact/jar/certs/**/*.pkcs8
+artifact/jar/certs/**/*.crt
+artifact/jar/certs/**/*.cer
+!artifact/jar/certs/README.md
+!artifact/jar/certs/**/.gitkeep

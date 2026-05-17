@@ -1,24 +1,44 @@
-site_name: 'Sterling Microsoft Graph SDK Java'
-site_description: 'Aplicación Java para procesar adjuntos de correos de Office 365 usando Microsoft Graph API'
+site_name: 'O365InboxAttachmentToDisk'
+site_description: 'Microsoft Graph adjuntos O365 + Sterling GFS — documentación'
 
 nav:
-  - Home: index.md
+  - Inicio: index.md
+  - Índice documentación: README.md
+  - Manual despliegue: implementacion/MANUAL-O365-GRAPH.md
+  - Histórico: HISTORICO-CAMBIOS.md
   - Changelog: CHANGELOG.md
-  - Configuración: DELETED_ITEMS_CONFIGURATION.md
-  - Diseño:
+  - Carpetas destino: DELETED_ITEMS_CONFIGURATION.md
+  - Decisiones:
+    - Índice ADR: decisions/README.md
+    - ADR-001 Well-known: decisions/ADR-001-carpetas-well-known-only.md
+  - Runbooks: runbooks/README.md
+  - Definiciones:
+    - Glosario: definiciones/README.md
+    - Rutas GFS: definiciones/ESTANDAR-RUTAS-GFS-O365.md
+  - Arquitectura (C4):
+    - Índice C4: arquitectura/README.md
+    - "Nivel 1 — Contexto": arquitectura/01-contexto.md
+    - "Nivel 2 — Contenedores": arquitectura/02-contenedores.md
+    - "Nivel 3 — Componentes": arquitectura/03-componentes.md
+    - "Nivel 4 — Código": arquitectura/04-codigo.md
+    - Vista despliegue: arquitectura/05-despliegue.md
+    - Vista dinámica E2E: arquitectura/06-dinamica-e2e.md
+    - Vista dinámica Exchange: arquitectura/07-dinamica-exchange.md
+    - Seguridad y datos: arquitectura/08-seguridad-datos.md
+    - Integraciones: arquitectura/09-integraciones.md
+    - Entornos y stack: arquitectura/10-entornos-stack.md
     - Requisitos: design/requirements.md
-    - Arquitectura: design/architecture.md
-    - Decisiones: design/decisions.md
+    - Decisiones (resumen): design/decisions.md
   - Build:
-    - Guía de Build: build/build-guide.md
+    - Guía: build/build-guide.md
     - Desarrollo: build/development.md
-    - Instalación: build/installation.md
+    - Instalación GFS: build/installation.md
   - Implementación:
-    - Deployment: implementation/deployment-guide.md
-    - Uso: implementation/usage.md
+    - Manual único: implementacion/MANUAL-O365-GRAPH.md
+    - Backlog: implementacion/00-BACKLOG-y-orden-implementacion.md
   - Soporte:
     - Troubleshooting: support/troubleshooting.md
-    - API Reference: support/api.md
+    - API CLI: support/api.md
     - Postman: support/postman.md
 
 plugins:

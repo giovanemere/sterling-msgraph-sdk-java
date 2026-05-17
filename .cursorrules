@@ -1,0 +1,5 @@
+# O365InboxAttachmentToDisk — contexto para el agente
+# Entrada única: CLAUDE.md
+# Regla principal (alwaysApply): .cursor/rules/msgraph-o365-project.mdc
+# Gate: scripts/ci/o365-full-gate.sh · IDE: scripts/ide-refresh-maven.sh
+# Backlog: docs/implementacion/00-BACKLOG-y-orden-implementacion.md

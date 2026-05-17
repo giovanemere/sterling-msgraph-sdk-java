@@ -1,0 +1,22 @@
+{
+  "java.jdt.ls.java.home": "/usr/lib/jvm/temurin-17-jdk-amd64",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "/usr/lib/jvm/temurin-17-jdk-amd64",
+      "default": true
+    }
+  ],
+  "java.import.maven.enabled": true,
+  "java.import.gradle.enabled": false,
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.jdt.ls.maven.downloadSources": true,
+  "maven.executable.path": "/usr/bin/mvn",
+  "maven.localRepository": "/home/giovanemere/.m2/repository",
+  "maven.terminal.customEnv": [
+    {
+      "environmentVariable": "JAVA_HOME",
+      "value": "/usr/lib/jvm/temurin-17-jdk-amd64"
+    }
+  ]
+}

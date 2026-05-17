@@ -1,102 +1,137 @@
-# 📧 Sterling Microsoft Graph SDK
+# O365InboxAttachmentToDisk — Microsoft Graph + Sterling GFS
 
-Aplicación Java simplificada para procesar adjuntos de correos de Office 365 usando Microsoft Graph API. Descarga adjuntos organizadamente y mueve mensajes a carpetas well-known.
+Aplicación Java (CLI) que lee el buzón vía **Microsoft Graph**, descarga adjuntos (`dominio/remitente/archivo`) y mueve mensajes a una carpeta **well-known** (por defecto **Elementos eliminados** / `deleteditems`).
 
-## 🚀 Inicio Rápido
+**Versión actual del JAR:** ver `pom.xml` (ej. `5.4.3`).
+
+---
+
+## Documentación (índice)
+
+| Prioridad | Enlace |
+|-----------|--------|
+| **Índice completo** | [docs/README.md](docs/README.md) |
+| **Backlog / orden trabajo** | [docs/implementacion/00-BACKLOG-y-orden-implementacion.md](docs/implementacion/00-BACKLOG-y-orden-implementacion.md) |
+| **Manual operativo** | [docs/implementacion/MANUAL-O365-GRAPH.md](docs/implementacion/MANUAL-O365-GRAPH.md) |
+| **Entregable GFS** | [artifact/README.md](artifact/README.md) |
+| Memoria agente (Claude/Cursor) | [CLAUDE.md](CLAUDE.md) |
+| Histórico v2.0 (processed → deleteditems) | [docs/HISTORICO-CAMBIOS.md](docs/HISTORICO-CAMBIOS.md) |
+| Arquitectura (C4) | [docs/arquitectura/README.md](docs/arquitectura/README.md) |
+| ADR / runbooks / rutas GFS | [docs/decisions/](docs/decisions/) · [docs/runbooks/](docs/runbooks/) · [docs/definiciones/](docs/definiciones/) |
+| TechDocs (MkDocs) | [docs/index.md](docs/index.md) |
+
+---
+
+## Inicio rápido (desarrollo)
 
 ```bash
-# 1. Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-
-# 2. Build
+cp secrets.env.example secrets.env
+source scripts/load-secrets.sh
 ./build.sh
-
-# 3. Ejecutar
-java -jar target/O365InboxAttachmentToDisk-*.jar
+mkdir -p ./tmp-attachments
+export PROCESSED_FOLDER=deleteditems
+java -jar target/O365InboxAttachmentToDisk-*.jar \
+  -tenant "$TENANT_ID" -client "$CLIENT_ID" -secret "$CLIENT_SECRET" \
+  -email "$MAIL_CORREO" -dir "./tmp-attachments/"
 ```
 
-## ✅ Características
+## Producción Sterling (GFS)
 
-- ✅ **Simplicidad**: Solo usa carpetas well-known de Office 365
-- ✅ **Seguridad**: Client Credentials Flow con Azure AD  
-- ✅ **Organización**: Archivos por dominio/usuario
-- ✅ **Confiabilidad**: Sin creación de carpetas personalizadas
-- ✅ **Proxy Support**: Compatible con redes corporativas
+```bash
+cd /gfssterling/jar
+./app.5.4.0.sh "<MAIL_CORREO>" "<WFID>"
+```
 
-## 📁 Estructura del Proyecto
+Detalle: manual §5 (cifrado), §7 (despliegue).
+
+---
+
+## Estructura del proyecto
 
 ```
 sterling-msgraph-sdk-java/
-├── 📚 docs/                    # Documentación organizada
-│   ├── design/                 # Requisitos, arquitectura, decisiones
-│   ├── build/                  # Build, desarrollo, instalación
-│   ├── implementation/         # Deployment, uso
-│   └── support/                # Troubleshooting, API, postman
-├── 🧪 scripts/                 # Scripts organizados
-│   ├── build/                  # compile.sh, check-hardcoded.sh
-│   ├── tests/                  # test-*.sh, validate-solution.sh
-│   └── deployment/             # deploy.sh
-├── 📦 src/main/java/           # Código fuente
-├── ⚙️ .env                     # Configuración
-├── 🔨 build.sh                 # Build principal
-├── 🧪 run-tests.sh             # Tests principales
-└── 📄 pom.xml                  # Maven configuration
+├── CLAUDE.md · .cursorrules
+├── .cursor/rules/msgraph-o365-project.mdc
+├── .cursor/skills/o365-deploy-lab/
+├── README.md · pom.xml · build.sh · run-tests.sh
+├── secrets.env.example · secrets.env (no Git)
+├── docs/
+│   ├── README.md                # Índice maestro documentación
+│   ├── index.md                 # Portada MkDocs
+│   ├── HISTORICO-CAMBIOS.md · CHANGELOG.md
+│   ├── decisions/               # ADR
+│   ├── runbooks/                # Índice operativo
+│   ├── definiciones/            # Rutas GFS, glosario
+│   ├── arquitectura/            # Modelo C4 (01-contexto … 10-entornos-stack)
+│   ├── design/ · build/ · support/
+│   └── implementacion/          # Manual, backlog, uso, deploy
+├── src/main/java/co/com/edtech/msgraph/  (+ CLAUDE.md)
+├── artifact/                    # Entregable despliegue → GFS (ver artifact/README.md)
+│   └── jar/                     # Paridad /gfssterling/jar/
+├── scripts/ · postman/
+└── .claude/skills/              # Paridad skills Claude Code
 ```
 
-## ⚙️ Configuración
+---
 
-### Variables de Entorno Requeridas
+## Secretos
+
+| Archivo | Git | Uso |
+|---------|-----|-----|
+| `secrets.env.example` | Sí | Plantilla |
+| `secrets.env` | **No** | Azure, buzón, proxy, cert |
+
 ```bash
-TENANT_ID=your-tenant-id
-CLIENT_ID=your-client-id  
-CLIENT_SECRET=your-client-secret
-MAIL_CORREO=mailbox@domain.com
-PATH_DESTINATION=/data/attachments
-PROCESSED_FOLDER=deleteditems    # deleteditems, sentitems, drafts, junkemail
+source scripts/load-secrets.sh
+./scripts/sync-postman-env.sh   # opcional Postman
 ```
 
-### Configuración Opcional
-```bash
-PROXY_HOST=proxy.company.com
-PROXY_PORT=3128
+---
+
+## Arquitectura (resumen)
+
+```mermaid
+flowchart LR
+  Sterling[Sterling BP] --> SH[app.5.4.0.sh]
+  SH --> JAR[O365 JAR]
+  JAR --> Graph[Microsoft Graph]
+  Graph --> EXO[Exchange Inbox]
+  JAR --> GFS[(GFS adjuntos)]
+  JAR --> DEL[deleteditems]
 ```
 
-## 🧪 Testing
+Arquitectura C4: [docs/arquitectura/README.md](docs/arquitectura/README.md).
+
+---
+
+## Swagger / OpenAPI (Graph local)
 
 ```bash
-# Todos los tests
+./scripts/serve-swagger.sh
+# http://127.0.0.1:8088/
+```
+
+Spec: `openapi/o365-sterling-graph.openapi.yaml` · Guía: `openapi/README.md`
+
+## Tests
+
+```bash
 ./run-tests.sh
-
-# Test específico
-./scripts/tests/test-deleteditems.sh
+mvn test
 ```
 
-## 📚 Documentación
+---
 
-- [📋 Requisitos](docs/design/requirements.md)
-- [🏗️ Arquitectura](docs/design/architecture.md)
-- [🔨 Build Guide](docs/build/build-guide.md)
-- [🚀 Deployment](docs/implementation/deployment-guide.md)
-- [🚨 Troubleshooting](docs/support/troubleshooting.md)
+## Lab Sterling (referencia)
 
-## 🔧 Desarrollo
+| Parámetro | Valor típico |
+|-----------|----------------|
+| Host | `192.168.137.190` |
+| JAR | `/gfssterling/jar/5.0.0/O365InboxAttachmentToDisk-5.4.3.jar` |
+| SSH WSL2 | `JASPER_SSH_BIN=/mnt/c/Windows/System32/OpenSSH/ssh.exe` |
 
-```bash
-# Setup desarrollo
-git clone <repo>
-cd sterling-msgraph-sdk-java
-cp .env.example .env
+---
 
-# Build y test
-./build.sh
-./run-tests.sh
-```
+## Stack
 
-## 📊 Métricas
-
-- **Código**: ~120 líneas (70% reducción vs v1.0)
-- **Dependencias**: Microsoft Graph SDK + Azure Identity
-- **Memoria**: < 512MB heap
-- **Startup**: < 5 segundos
-- **Compatibilidad**: Java 17+, todos los SO
+Java 17 · Microsoft Graph SDK · Azure Identity · Maven shade · CipherConsole (GFS)

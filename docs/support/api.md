@@ -1,5 +1,23 @@
 # 📚 Referencia de API
 
+## Swagger UI (local)
+
+OpenAPI 3.0 del subset Graph + token Entra usado por el JAR:
+
+| Recurso | Ruta |
+|---------|------|
+| Spec YAML | [`openapi/o365-sterling-graph.openapi.yaml`](../../openapi/o365-sterling-graph.openapi.yaml) |
+| Guía | [`openapi/README.md`](../../openapi/README.md) |
+
+```bash
+./scripts/serve-swagger.sh
+# → http://127.0.0.1:8088/
+```
+
+En Swagger: **Authorize** con `Bearer <token>` (obtener vía `POST .../token` o `source scripts/load-secrets.sh` + Postman).
+
+---
+
 ## 🔌 Microsoft Graph Endpoints
 
 ### Autenticación
@@ -46,31 +64,42 @@ Content-Type: application/json
 | `deleteditems` | deleteditems | Elementos eliminados |
 | `junkemail` | junkemail | Correo no deseado |
 
-## ⚙️ Variables de Entorno
+## ⚙️ Configuración (`secrets.env`)
 
-| Variable | Requerida | Descripción | Ejemplo |
-|----------|-----------|-------------|---------|
-| `TENANT_ID` | ✅ | ID del tenant de Azure | `d98b231e-79bb-4aff-b916-0157f4cdc5bc` |
-| `CLIENT_ID` | ✅ | ID de la aplicación | `fee4cb62-31c3-4361-90f3-b34c46c953ff` |
-| `CLIENT_SECRET` | ✅ | Secret de la aplicación | `T6r8Q~5-RlZcICyRvcBpDijHWUFZfXIq7NmS.dfb` |
-| `MAIL_CORREO` | ✅ | Buzón a procesar | `user@domain.com` |
-| `PATH_DESTINATION` | ✅ | Directorio de adjuntos | `/data/attachments` |
-| `PROCESSED_FOLDER` | ❌ | Carpeta destino | `deleteditems` |
-| `PROXY_HOST` | ❌ | Host del proxy | `proxy.company.com` |
-| `PROXY_PORT` | ❌ | Puerto del proxy | `3128` |
-
-## 🔧 Parámetros de Línea de Comandos
+Valores reales en **`secrets.env`** (no versionado). Plantilla: `secrets.env.example`.
 
 ```bash
-java -jar O365InboxAttachmentToDisk-*.jar \
-    --mail-correo="user@domain.com" \
-    --path-destination="/data/attachments" \
-    --tenant-id="tenant-id" \
-    --client-id="client-id" \
-    --client-secret="client-secret" \
-    --proxy-host="proxy.company.com" \
-    --proxy-port="3128"
+source scripts/load-secrets.sh
 ```
+
+| Variable | Requerida | Descripción | Consumida por |
+|----------|-----------|-------------|---------------|
+| `TENANT_ID` | ✅ | Tenant Azure AD | CLI `-tenant` (scripts exportan desde secrets) |
+| `CLIENT_ID` | ✅ | App registration | CLI `-client` |
+| `CLIENT_SECRET` | ✅* | Secret (*o certificado) | CLI `-secret` |
+| `MAIL_CORREO` | ✅ | Buzón | CLI `-email` |
+| `PATH_DESTINATION` | ✅ | Directorio adjuntos | CLI `-dir` |
+| `PROCESSED_FOLDER` | ❌ | Carpeta well-known destino | **Solo** `Mailbox.java` (`getenv`) |
+| `PROXY_HOST` / `PROXY_PORT` | ❌ | Proxy | CLI `-host` / `-port` |
+| `PRIVATE_CERTIFICATE` | ❌ | `artifact/jar/certs/account/*-full.pem` (GFS: `/gfssterling/jar/certs/…`) | CLI `-certificate` |
+
+## 🔧 Parámetros CLI (`App.java`)
+
+Pares `opción valor` (no flags `--nombre`):
+
+```bash
+source scripts/load-secrets.sh
+java -jar target/O365InboxAttachmentToDisk-*.jar \
+  -tenant "$TENANT_ID" \
+  -client "$CLIENT_ID" \
+  -secret "$CLIENT_SECRET" \
+  -email "$MAIL_CORREO" \
+  -dir "$PATH_DESTINATION/" \
+  -host "$PROXY_HOST" \
+  -port "$PROXY_PORT"
+```
+
+Autenticación por certificado: `-certificate` y `-certificatePassword` en lugar de `-secret`.
 
 ## 📊 Códigos de Respuesta
 

@@ -24,8 +24,12 @@ fi
 if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Build completado exitosamente"
-    echo "📦 JAR disponible en: target/O365InboxAttachmentToDisk-*.jar"
+    echo "📦 JAR shaded: target/O365InboxAttachmentToDisk-*.jar"
     ls -la target/*.jar 2>/dev/null || echo "⚠️ JAR no encontrado"
+    if [ -f "scripts/build/sync-artifact-offline.sh" ]; then
+        echo "📦 Paquete offline (JAR fino + deps)..."
+        ./scripts/build/sync-artifact-offline.sh
+    fi
 else
     echo "❌ Build falló"
     exit 1

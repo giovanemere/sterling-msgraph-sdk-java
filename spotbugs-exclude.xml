@@ -15,4 +15,10 @@
         <Method name="main"/>
         <Bug pattern="DM_EXIT"/>
     </Match>
+
+    <!-- Singleton GraphServiceClient held for Sterling batch lifecycle -->
+    <Match>
+        <Class name="co.com.edtech.msgraph.Client"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
 </FindBugsFilter>

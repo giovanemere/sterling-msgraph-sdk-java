@@ -35,6 +35,13 @@ public class Validator {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public static boolean isValidHost(String host) {
+        if (isNullOrEmpty(host)) {
+            return false;
+        }
+        // IP literal (p. ej. 172.21.224.1 en WSL, 192.168.137.3 en lab) sin depender de DNS
+        if (host.matches("^(?:\\d{1,3}\\.){3}\\d{1,3}$")) {
+            return true;
+        }
         try {
             InetAddress.getByName(host);
             return true;

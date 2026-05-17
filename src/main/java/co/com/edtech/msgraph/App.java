@@ -1,16 +1,10 @@
 package co.com.edtech.msgraph;
 
-import com.microsoft.graph.serviceclient.GraphServiceClient;
-import org.apache.commons.validator.routines.EmailValidator;
-
-import jakarta.mail.internet.AddressException;
 import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.PrintStream;
 
 public class App {
-    public static String FOLDER_ID = "Inbox";
+    public static final String FOLDER_ID = "Inbox";
     private String email;
     private String destinationFilePath;
     private String tenantId;
@@ -106,9 +100,9 @@ public class App {
         return email;
     }
 
-    public void setEmail(String email) throws AddressException {
-        if(! EmailValidator.getInstance().isValid(email)){
-            throw new jakarta.mail.internet.AddressException();
+    public void setEmail(String email) {
+        if (!Validator.isValidEmail(email)) {
+            throw new IllegalArgumentException("Email invalido: " + email);
         }
         this.email = email;
     }
@@ -125,53 +119,24 @@ public class App {
     }
 
 
-    private void setParams(String option, String value) throws AddressException, NoSuchFieldException {
+    private void setParams(String option, String value) throws NoSuchFieldException {
         switch (option) {
-            case "-e":
-            case "-email":
-                this.setEmail(value);
-                break;
-            case "-d":
-            case "-dir":
-                this.setDestinationFilePath(value);
-                break;
-            case "-tenant":
-                this.setTenantId(value);
-                break;
-            case "-client":
-                this.setClientId(value);
-                break;
-            case "-secret":
-                this.setClientSecret(value);
-                break;
-            case "-p":
-            case "-port":
-            case "--proxy-port":
-                this.setProxyPort(Integer.parseInt(value));
-                break;
-            case "-h":
-            case "-host":
-            case "--proxy-host":
-                this.setProxyHost(value);
-                break;
-            case "-c":
-            case "-certificate":
-            case "-privateCertificate":
-            case "--certificate-path":
-                this.setCertificateFilePath(value);
-                break;
-            case "-certificatePassword":
-            case "-certpwd":
-            case "--client-certificate-password":
-                this.setCertificatePassword(value);
-                break;
-            default:
-                throw new NoSuchFieldException("Argument not defined" + option);
+            case "-e", "-email" -> this.setEmail(value);
+            case "-d", "-dir" -> this.setDestinationFilePath(value);
+            case "-tenant" -> this.setTenantId(value);
+            case "-client" -> this.setClientId(value);
+            case "-secret" -> this.setClientSecret(value);
+            case "-p", "-port", "--proxy-port" -> this.setProxyPort(Integer.parseInt(value));
+            case "-h", "-host", "--proxy-host" -> this.setProxyHost(value);
+            case "-c", "-certificate", "-privateCertificate", "--certificate-path" ->
+                    this.setCertificateFilePath(value);
+            case "-certificatePassword", "-certpwd", "--client-certificate-password" ->
+                    this.setCertificatePassword(value);
+            default -> throw new NoSuchFieldException("Argument not defined" + option);
         }
-
     }
 
-    public void init(String[] args) throws IOException,IllegalArgumentException, NoSuchFieldException, AddressException {
+    public void init(String[] args) throws IOException, IllegalArgumentException, NoSuchFieldException {
         int size = args.length;
         int i = 0;
         if (size % 2 == 1) {
@@ -198,49 +163,43 @@ public class App {
         )
             throw new IOException("Missing parameters");
 
-        if(!Validator.isNullOrEmpty(this.getProxyHost()) || Validator.isValidPort(this.getProxyPort()))
-            if(!Validator.validateProxy(this.getProxyHost(), this.getProxyPort()))
-                throw new IOException("Wrong Proxy parameters");
-    }
-
-    private GraphServiceClient getSecretClient() throws Exception {
-        if(this.getProxyPort() > 0)
-            return Client.getClientBySecret(
-                    this.getClientId(),
-                    this.getTenantId(),
-                    this.getClientSecret(),
-                    this.getProxyHost(),
-                    this.getProxyPort());
-
-        return Client.getClientBySecret(this.getClientId(), this.getTenantId(), this.getClientSecret());
-    }
-
-    private GraphServiceClient getCertificateClient() throws Exception {
-        if(this.getProxyPort() > 0)
-            return Client.getClientByCertificate(
-                    this.getClientId(),
-                    this.getTenantId(),
-                    this.getCertificateFilePath(),
-                    this.getCertificatePassword(),
-                    this.getProxyHost(),
-                    this.getProxyPort());
-        return Client.getClientByCertificate(this.getClientId(), this.getTenantId(), this.getCertificateFilePath(), this.getCertificatePassword());
+        if (!Validator.isNullOrEmpty(this.getProxyHost())
+                && !Validator.validateProxy(this.getProxyHost(), this.getProxyPort())) {
+            throw new IOException("Wrong Proxy parameters");
+        }
     }
 
     private void getAttachments() throws Exception {
-        GraphServiceClient client = Validator.isNullOrEmpty(this.getClientSecret()) ? this.getCertificateClient() : this.getSecretClient();
-        Mailbox.readMailFolder(client, App.FOLDER_ID, this.getDestinationFilePath(), this.getEmail());
+        Mailbox.readMailFolder(
+                Client.resolve(
+                        this.getClientId(),
+                        this.getTenantId(),
+                        this.getClientSecret(),
+                        this.getCertificateFilePath(),
+                        this.getCertificatePassword(),
+                        this.getProxyHost(),
+                        this.getProxyPort()),
+                App.FOLDER_ID,
+                this.getDestinationFilePath(),
+                this.getEmail());
     }
     public static void main(String[] args) {
-        Logger logger = LoggerFactory.getLogger(App.class);
+        int exitCode = run(args, System.err);
+        System.exit(exitCode);
+    }
+
+    /** Package-visible for tests; logs failures to {@code err}. */
+    static int run(String[] args, PrintStream err) {
         try {
             App exec = new App();
             exec.init(args);
             exec.validate();
             exec.getAttachments();
+            return 0;
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            err.println("O365InboxAttachmentToDisk failed: " + e.getMessage());
+            e.printStackTrace(err);
+            return 1;
         }
-
     }
 }

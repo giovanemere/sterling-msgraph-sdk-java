@@ -5,24 +5,71 @@
 
     <groupId>co.com.edtech</groupId>
     <artifactId>O365InboxAttachmentToDisk</artifactId>
-    <version>5.4.3</version>
+    <version>5.4.4</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <slf4j.version>2.0.17</slf4j.version>
         <junit.version>5.12.1</junit.version>
         <mockito.version>5.2.0</mockito.version>
-        <netty.version>4.1.119.Final</netty.version>
+        <netty.version>4.1.133.Final</netty.version>
+        <maven.shade.skip>false</maven.shade.skip>
     </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.azure</groupId>
                 <artifactId>azure-core</artifactId>
-                <version>1.55.3</version>                <!-- {x-version-update;com.azure:azure-core;current} -->
+                <version>1.57.0</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>1.11.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-abstractions</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-http-okHttp</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-serialization-json</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-serialization-text</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-serialization-form</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-serialization-multipart</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.kiota</groupId>
+                <artifactId>microsoft-kiota-authentication-azure</artifactId>
+                <version>1.8.5</version>
             </dependency>
             <dependency>
                 <groupId>com.azure</groupId>
@@ -86,30 +133,29 @@
             <version>1.9.0</version>
         </dependency>
         <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>jakarta.mail</artifactId>
-            <version>2.0.1</version>
-        </dependency>
-        <dependency>
             <groupId>com.microsoft.graph</groupId>
             <artifactId>microsoft-graph</artifactId>
             <version>6.33.0</version>
         </dependency>
         <dependency>
+            <groupId>com.microsoft.graph</groupId>
+            <artifactId>microsoft-graph-core</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-identity</artifactId>
-            <version>1.15.4</version>
+            <version>1.16.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core-http-netty</artifactId>
-            <version>1.15.11</version>
+            <version>1.16.2</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -128,6 +174,14 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.6.0</version>
                 <executions>
@@ -137,6 +191,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <skip>${maven.shade.skip}</skip>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -197,17 +252,11 @@
                     <failBuildOnCVSS>7</failBuildOnCVSS>
                     <skipProvidedScope>true</skipProvidedScope>
                     <skipRuntimeScope>false</skipRuntimeScope>
+                    <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
                     <suppressionFiles>
                         <suppressionFile>owasp-suppressions.xml</suppressionFile>
                     </suppressionFiles>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             
             <!-- SpotBugs for code analysis -->

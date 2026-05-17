@@ -1,14 +1,16 @@
 # 🏗️ Decisiones de Diseño
 
+**Arquitectura (modelo C4):** [arquitectura/README.md](../arquitectura/README.md)
+
 ## 🎯 Decisiones Arquitectónicas
 
 ### DA-001: Carpetas Well-Known Only
-**Decisión**: Usar únicamente carpetas nativas de Office 365
-**Razón**: 
-- Elimina complejidad de creación/validación
-- Garantiza disponibilidad
-- Reduce código en 70%
-**Alternativas**: Carpetas personalizadas (descartada por complejidad)
+
+**ADR formal:** [ADR-001-carpetas-well-known-only.md](../decisions/ADR-001-carpetas-well-known-only.md)
+
+**Decisión**: Usar únicamente carpetas nativas de Office 365; default `deleteditems`.  
+**Razón**: Elimina `createChildFolder` / carpeta `processed` (v2.0, commit `67b4547`).  
+**Alternativas**: Carpetas personalizadas (descartada).
 
 ### DA-002: Procesamiento Secuencial
 **Decisión**: Procesar mensajes uno por uno
@@ -70,6 +72,5 @@
 
 ### Versión 2.0 (Actual)
 - Solo carpetas well-known
-- Lógica simplificada
-- ~120 líneas de código
-- 70% menos complejidad
+- Lógica simplificada en `Mailbox.java`
+- Detalle y commit: [HISTORICO-CAMBIOS.md](../HISTORICO-CAMBIOS.md)

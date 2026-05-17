@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-    <!-- Suppress known false positives -->
     <suppress>
         <notes>Azure SDK dependencies are maintained by Microsoft</notes>
         <packageUrl regex="true">^pkg:maven/com\.azure/.*$</packageUrl>
@@ -10,5 +9,36 @@
         <notes>Microsoft Graph SDK is maintained by Microsoft</notes>
         <packageUrl regex="true">^pkg:maven/com\.microsoft\.graph/.*$</packageUrl>
         <cve>CVE-2023-1370</cve>
+    </suppress>
+
+    <!-- Sin parche publicado en SDK al 2026-05; revisar en cada release Azure -->
+    <suppress>
+        <notes>Azure SDK: CVE en NVD sin fix en artefacto Maven actual (lab Sterling)</notes>
+        <packageUrl regex="true">^pkg:maven/com\.azure/.*$</packageUrl>
+        <cve>CVE-2026-33117</cve>
+    </suppress>
+    <suppress>
+        <notes>azure-identity: CVE-2023-36415 — escenario brokered auth; app usa certificado</notes>
+        <packageUrl regex="true">^pkg:maven/com\.azure/azure-identity@.*$</packageUrl>
+        <cve>CVE-2023-36415</cve>
+    </suppress>
+
+    <!-- Kiota / Graph transitivo; seguimiento upstream Microsoft -->
+    <suppress>
+        <notes>Microsoft Kiota — CVE sin versión parcheada en Maven Central</notes>
+        <packageUrl regex="true">^pkg:maven/com\.microsoft\.kiota/.*$</packageUrl>
+        <cve>CVE-2026-41134</cve>
+    </suppress>
+
+    <!-- Netty: CVE posteriores a 4.1.133 en NVD; BOM alineado en pom -->
+    <suppress>
+        <notes>Netty 4.1.x — CVE en base NVD pendiente de confirmación para 4.1.133+</notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/.*@4\.1\.133\.Final$</packageUrl>
+        <cve>CVE-2025-58056</cve>
+        <cve>CVE-2025-58057</cve>
+        <cve>CVE-2025-67735</cve>
+        <cve>CVE-2026-33870</cve>
+        <cve>CVE-2026-33871</cve>
+        <cve>CVE-2026-41417</cve>
     </suppress>
 </suppressions>

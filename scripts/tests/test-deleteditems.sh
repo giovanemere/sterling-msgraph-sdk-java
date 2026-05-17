@@ -1,55 +1,60 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Prueba local: PROCESSED_FOLDER=deleteditems y flags CLI reales (App.java).
+set -euo pipefail
 
-# 🗑️ Test: Carpetas Well-Known Simplificadas
-# Verifica que el sistema use correctamente carpetas nativas de Office 365
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${REPO_ROOT}"
 
-echo "🗑️ Probando configuración simplificada con carpetas well-known..."
-echo "============================================================="
-
-# Configurar variables de entorno
-export PROCESSED_FOLDER=deleteditems
-
-echo "📁 Configuración:"
-echo "   PROCESSED_FOLDER=$PROCESSED_FOLDER (Elementos eliminados)"
-echo ""
-
-# Verificar que el JAR existe
-JAR_FILE=$(ls ../../../../target/O365InboxAttachmentToDisk-*.jar 2>/dev/null | head -1)
-if [ -z "$JAR_FILE" ]; then
-    echo "❌ JAR no encontrado. Ejecutar ./build.sh desde el directorio raíz primero"
-    exit 1
+if [[ -f "${REPO_ROOT}/scripts/load-secrets.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "${REPO_ROOT}/scripts/load-secrets.sh"
 fi
 
-echo "📦 JAR encontrado: $JAR_FILE"
+: "${TENANT_ID:?Defina TENANT_ID en secrets.env}"
+: "${CLIENT_ID:?Defina CLIENT_ID en secrets.env}"
+: "${CLIENT_SECRET:?Defina CLIENT_SECRET en secrets.env}"
+: "${MAIL_CORREO:?Defina MAIL_CORREO en secrets.env}"
+
+export PROCESSED_FOLDER="${PROCESSED_FOLDER:-deleteditems}"
+
+JAR_FILE="$(ls -1 "${REPO_ROOT}"/target/O365InboxAttachmentToDisk-*.jar 2>/dev/null | head -1)"
+if [[ -z "${JAR_FILE}" ]]; then
+  echo "JAR no encontrado. Ejecute ./build.sh desde la raíz del repo." >&2
+  exit 1
+fi
+
+TEST_DIR="${REPO_ROOT}/tmp-test-deleteditems"
+mkdir -p "${TEST_DIR}"
+
+echo "PROCESSED_FOLDER=${PROCESSED_FOLDER}"
+echo "JAR: ${JAR_FILE}"
+echo "Destino: ${TEST_DIR}/"
 echo ""
 
-# Crear directorio de prueba
-TEST_DIR="./test-deleteditems"
-mkdir -p "$TEST_DIR"
+PROXY_ARGS=()
+if [[ -n "${PROXY_HOST:-}" && -n "${PROXY_PORT:-}" ]]; then
+  PROXY_ARGS=(-host "${PROXY_HOST}" -port "${PROXY_PORT}")
+fi
 
-echo "🧪 Ejecutando prueba simplificada..."
-echo "   - Sin creación de carpetas"
-echo "   - Sin validaciones complejas"
-echo "   - Acceso directo a carpeta nativa"
-echo "   - Adjuntos se guardan en: $TEST_DIR"
-echo ""
-
-# Ejecutar con logging detallado
-java -jar "$JAR_FILE" \
-    --mail-correo="$MAIL_CORREO" \
-    --path-destination="$TEST_DIR" \
-    --tenant-id="$TENANT_ID" \
-    --client-id="$CLIENT_ID" \
-    --client-secret="$CLIENT_SECRET" \
-    --proxy-host="$PROXY_HOST" \
-    --proxy-port="$PROXY_PORT" 2>&1 | tee test-simplified.log
+set +e
+java -jar "${JAR_FILE}" \
+  -tenant "${TENANT_ID}" \
+  -client "${CLIENT_ID}" \
+  -secret "${CLIENT_SECRET}" \
+  -email "${MAIL_CORREO}" \
+  -dir "${TEST_DIR}/" \
+  "${PROXY_ARGS[@]}" \
+  2>&1 | tee "${REPO_ROOT}/test-deleteditems.log"
+JAVA_EXIT=${PIPESTATUS[0]}
+set -e
 
 echo ""
-echo "📋 Verificar en el log:"
-echo "   ✅ Debe mostrar: 'Usando carpeta: Elementos eliminados'"
-echo "   ✅ Debe mostrar: 'Carpeta deleteditems obtenida: Deleted Items'"
-echo "   ✅ Sin mensajes de creación o búsqueda de carpetas"
-echo "   ✅ Los mensajes deben moverse directamente"
-echo ""
-echo "📁 Log guardado en: test-simplified.log"
-echo "📁 Adjuntos guardados en: $TEST_DIR"
+if [[ ${JAVA_EXIT} -ne 0 ]]; then
+  echo "Fallo: exit code ${JAVA_EXIT} (esperado 0 si Graph y buzón OK)." >&2
+  exit "${JAVA_EXIT}"
+fi
+
+echo "OK: JAR terminó con exit 0."
+echo "Log: ${REPO_ROOT}/test-deleteditems.log"
+echo "Revise en log: 'Usando carpeta: Elementos eliminados' y moves a deleteditems."

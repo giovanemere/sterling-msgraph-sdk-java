@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>O365 Sterling — Swagger UI (Graph subset)</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+  <style>
+    html { box-sizing: border-box; overflow-y: scroll; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+    .banner {
+      background: #1b3a5c;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      font-family: system-ui, sans-serif;
+      font-size: 0.9rem;
+    }
+    .banner a { color: #9fd4ff; }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    <strong>O365InboxAttachmentToDisk</strong> — subset Graph + Entra token.
+    Spec: <code>o365-sterling-graph.openapi.yaml</code> ·
+    <a href="../docs/support/api.md">docs/support/api.md</a>
+  </div>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" crossorigin></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js" crossorigin></script>
+  <script>
+    window.onload = function () {
+      window.ui = SwaggerUIBundle({
+        url: './o365-sterling-graph.openapi.yaml',
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: 'StandaloneLayout',
+        persistAuthorization: true,
+        tryItOutEnabled: true,
+        displayRequestDuration: true,
+        filter: true,
+        syntaxHighlight: { activate: true, theme: 'monokai' }
+      });
+    };
+  </script>
+</body>
+</html>

@@ -4,9 +4,9 @@ Esta carpeta contiene todos los archivos relacionados con Postman para el proyec
 
 ## 📁 Archivos
 
-### 🔧 Collection y Environment
-- `Microsoft_Graph_Sterling_Complete.postman_collection.json` - Colección completa con funcionalidades enhanced
-- `Sterling_Graph_Environment.postman_environment.json` - Variables de entorno configuradas
+### Colección y environment (v2 — deleteditems)
+- `Microsoft_Graph_Sterling_Complete.postman_collection.json` — sin carpeta `processed` custom
+- `Sterling_Graph_Environment.postman_environment.json` — `destination_folder_id`, `destination_folder_wellknown`
 
 ## 🚀 Importar en Postman
 
@@ -17,12 +17,12 @@ Esta carpeta contiene todos los archivos relacionados con Postman para el proyec
 
 ## 📚 Documentación
 
-Ver documentación completa en: `../docs/postman.md`
+Ver: [docs/support/postman.md](../docs/support/postman.md)
 
 ## 🔧 Estructura de la Colección
 
 - 🔐 **Authentication** - Obtener token OAuth2
-- 📁 **Folder Management** - Gestión de carpetas
+- 📁 **Folder Management** - List folders, **Get deleteditems**, list moved messages
 - 📧 **Mail Operations** - Operaciones de correo
 - 📎 **Attachment Operations** - Procesamiento de adjuntos
 - 🔄 **Batch Processing** - Procesamiento por lotes (Enhanced)
