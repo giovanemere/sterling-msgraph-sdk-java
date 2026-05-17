@@ -31,7 +31,7 @@ if [[ -f "${THIN_JAR_LOCAL}" ]]; then
   echo "Copiando JAR fino + libs offline (artifact/jar/5.0.0 + jars/)..."
   "${JASPER_SCP_BIN}" "${THIN_JAR_LOCAL}" "${LAB_USER}@${LAB_HOST}:${REMOTE_JAR_DIR}/"
   if [[ -d "${REPO_ROOT}/artifact/jar/jars" ]]; then
-    "${JASPER_SSH_BIN}" "${LAB_USER}@${LAB_HOST}" "mkdir -p ${REMOTE_JAR_BASE}/jars/deps ${REMOTE_JAR_BASE}/jars/4.1.119"
+    "${JASPER_SSH_BIN}" "${LAB_USER}@${LAB_HOST}" "mkdir -p ${REMOTE_JAR_BASE}/jars/deps ${REMOTE_JAR_BASE}/jars/4.1.133"
     "${JASPER_SCP_BIN}" -r "${REPO_ROOT}/artifact/jar/jars/"* \
       "${LAB_USER}@${LAB_HOST}:${REMOTE_JAR_BASE}/jars/"
   fi

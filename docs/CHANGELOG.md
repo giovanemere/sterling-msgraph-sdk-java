@@ -5,6 +5,14 @@ Histórico funcional detallado (v2.0 well-known, commits): **[HISTORICO-CAMBIOS.
 
 ---
 
+## [5.4.5] — 2026-05-17
+
+### Fixed
+- Paquete offline: `dependency:copy-dependencies` con scope **runtime** (incluye OpenTelemetry; corrige `NoClassDefFoundError: ImplicitContextKeyed`).
+- `app.conf`: Netty tcnative **2.0.77.Final**, carpeta legacy `jars/4.1.133`.
+
+---
+
 ## [5.4.4] — 2026-05-17
 
 ### Added
